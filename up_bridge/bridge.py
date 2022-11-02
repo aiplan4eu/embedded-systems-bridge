@@ -15,7 +15,6 @@
 import sys
 from collections import OrderedDict
 from enum import Enum
-from functools import partial
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 from unified_planning.engines import OptimalityGuarantee
@@ -157,7 +156,7 @@ class Bridge:
             self._api_actions[_action.__name__] = _action
             return _action, _action.parameters
 
-    def get_executable_action(self, action: ActionInstance) -> Callable[[], object]:
+    def get_executable_action(self, action: ActionInstance) -> Tuple[Callable[..., object], List[object]]:
         """Return API callable action corresponding to the given UP action."""
         if action.action.name not in self._api_actions.keys():
             raise ValueError(f"No corresponding action defined for {action}!")
