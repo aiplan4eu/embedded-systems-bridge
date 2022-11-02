@@ -13,13 +13,14 @@
 # limitations under the License.
 
 import sys
+import typing
 from collections import OrderedDict
 from enum import Enum
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.model import (Fluent, InstantaneousAction, Object,
-                                    Parameter, Problem)
+                                    Parameter, Problem, Type)
 from unified_planning.plans import ActionInstance
 from unified_planning.shortcuts import (BoolType, IntType, OneshotPlanner,
                                         RealType, UserType)
@@ -30,7 +31,7 @@ class Bridge:
 
     def __init__(self) -> None:
         # Note: Map from type instead of str to recognize subclasses.
-        self._types: Dict[type, UserType] = {
+        self._types: Dict[type, Type] = {
             bool: BoolType(),
             int: IntType(),
             float: RealType(),
@@ -52,7 +53,7 @@ class Bridge:
             assert api_type not in self._types.keys()
             self._types[api_type] = UserType(api_type.__name__)
 
-    def get_type(self, api_type: type) -> UserType:
+    def get_type(self, api_type: type) -> Type:
         """Return UP user type corresponding to api_type or its superclasses."""
         for check_type, user_type in self._types.items():
             if issubclass(api_type, check_type):
@@ -60,7 +61,7 @@ class Bridge:
 
         raise ValueError(f"No corresponding UserType defined for {api_type}!")
 
-    def get_object_type(self, api_object: object) -> UserType:
+    def get_object_type(self, api_object: object) -> Type:
         """Return UP user type corresponding to api_object's type."""
         for api_type, user_type in self._types.items():
             if isinstance(api_object, api_type):
@@ -91,8 +92,8 @@ class Bridge:
     def create_fluent_from_signature(
         self,
         name: str,
-        api_types: Iterable[Type],
-        result_api_type: Optional[Type] = None,
+        api_types: Iterable[type],
+        result_api_type: Optional[type] = None,
     ) -> Fluent:
         """
         Create UP fluent using the UP types corresponding to the api_types given.
@@ -121,7 +122,7 @@ class Bridge:
          preconditions and effects.
         """
         assert action.__name__ not in self._actions.keys()
-        parameters: Dict[str, UserType] = OrderedDict()
+        parameters: Dict[str, Type] = OrderedDict()
 
         if isinstance(action, object):
             # Note: For class methods, the first argument is the instance.
@@ -187,7 +188,7 @@ class Bridge:
             ).items()
         ]
 
-    def create_enum_objects(self, enum: Type[Enum]) -> List[Object]:
+    def create_enum_objects(self, enum: typing.Type[Enum]) -> List[Object]:
         """Create UP objects based on enum."""
         return [self.create_object(member.name, member) for member in enum]
 
