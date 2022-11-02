@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
 import sys
 import typing
 from collections import OrderedDict
@@ -69,96 +70,128 @@ class Bridge:
 
         raise ValueError(f"No corresponding UserType defined for {api_object}!")
 
-    def create_fluent(self, function: Callable[..., object]) -> Fluent:
-        """
-        Create UP fluent based on function, which provides the fluent's values
-         in the application domain for problem initialization.
-        """
-        name = function.__qualname__.split(".")[-1]
-        assert name not in self._fluents.keys()
-        api_types = list(function.__annotations__.items())
-        _, result_api_type = api_types[-1]
-        self._fluents[name] = Fluent(
-            name,
-            self.get_type(result_api_type),
-            OrderedDict(
-                (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in api_types[:-1]
-            ),
-        )
-        self._fluent_functions[name] = function
-        return self._fluents[name]
-
-    def create_fluent_from_signature(
+    def create_fluent(
         self,
         name: str,
-        api_types: Iterable[type],
         result_api_type: Optional[type] = None,
+        signature: Optional[Dict[str, type]] = None,
+        callable: Optional[Callable[..., object]] = None,
+        **kwargs: type,
     ) -> Fluent:
         """
-        Create UP fluent using the UP types corresponding to the api_types given.
-        By default, use BoolType() for the result unless specified otherwise through result_api_type.
+        Create UP fluent with name using the UP types corresponding to the api_types in signature
+         updated by kwargs. By default, use BoolType() as result_api_type.
+        Optionally, provide a callable which calculates the fluent's values in the application
+         domain for problem initialization. Otherwise, you must set it separately.
         """
         assert name not in self._fluents.keys()
         self._fluents[name] = Fluent(
             name,
             self.get_type(result_api_type) if result_api_type else BoolType(),
             OrderedDict(
-                [
-                    (api_type.__name__.lower(), self.get_type(api_type))
-                    for api_type in api_types
-                ]
+                (parameter_name, self.get_type(api_type))
+                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
             ),
         )
-        # Note: When not providing a function for the fluent, you need to set its initial values explicitly during problem definition.
+        if callable:
+            self._fluent_functions[name] = callable
         return self._fluents[name]
 
+    def create_fluent_from_function(self, function: Callable[..., object]) -> Fluent:
+        """
+        Create UP fluent based on function, which calculates the fluent's values
+         in the application domain for problem initialization.
+        """
+        annotations = function.__annotations__
+        return self.create_fluent(
+            function.__name__,
+            annotations['return'],
+            OrderedDict((parameter_name, api_type) for parameter_name, api_type in list(annotations.items())[:-1]),
+            callable=function,
+        )
+
+    def set_fluent_functions(self, functions: Iterable[Callable[..., object]]) -> None:
+        """Set functions as fluent functions in the application domain. Their __name__ must match with fluent creation."""
+        for function in functions:
+            name = function.__name__
+            assert name not in self._fluent_functions.keys()
+            self._fluent_functions[name] = function
+
     def create_action(
-        self, action: Callable[..., object]
+        self,
+        name: str,
+        signature: Optional[Dict[str, type]] = None,
+        callable: Optional[Callable[..., object]] = None,
+        **kwargs: type,
     ) -> Tuple[InstantaneousAction, List[Parameter]]:
         """
-        Create UP InstantaneousAction based on the class's signature.
+        Create UP InstantaneousAction with name based on signature updated by kwargs.
+         Optionally, provide a callable for action execution. Otherwise, you must set it separately.
+        Return the InstantaneousAction with its parameters for convenient definition of its
+         preconditions and effects in the UP domain.
+        """
+        assert name not in self._actions.keys()
+        action = InstantaneousAction(
+            name,
+            # Use signature's types, without its return type.
+            OrderedDict(
+                (parameter_name, self.get_type(api_type))
+                for parameter_name, api_type in list((dict(signature, **kwargs) if signature else kwargs).items())[:-1]
+            ),
+        )
+        self._actions[name] = action
+        if callable:
+            self._api_actions[name] = callable
+        return action, action.parameters
+
+    def create_action_from_function(
+        self, function: Callable[..., object]
+    ) -> Tuple[InstantaneousAction, List[Parameter]]:
+        """
+        Create UP InstantaneousAction based on function.
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects.
         """
-        assert action.__name__ not in self._actions.keys()
-        parameters: Dict[str, Type] = OrderedDict()
+        return self.create_action(*self.get_action_parameters(function), callable=function)
 
-        if isinstance(action, object):
-            # Note: For class methods, the first argument is the instance.
-            action_name = action.__qualname__.split(".")[-1]
+    def get_action_parameters(
+        self, callable: Callable[..., object], function: Optional[Callable[..., object]] = None
+    ) -> Tuple[str, Dict[str, type]]:
+        """
+        Return name from callable and API signature from class function (or method).
+        By default, callable is used as function as well.
+        If callable is a class method, implicitly return its defining class as first parameter.
+        """
+        if function is None:
+            function = callable
+        signature: Dict[str, Type] = OrderedDict()
+        if hasattr(function, '__qualname__') and '.' in function.__qualname__:
+            # Add defining class of function to parameters.
+            namespace = sys.modules[function.__module__]
+            for name in function.__qualname__.split('.')[:-1]:
+                # Note: Use "context" to resolve potential relay to Python source file.
+                namespace = (
+                    namespace.__dict__["context"][name]
+                    if "context" in namespace.__dict__.keys()
+                    else namespace.__dict__[name]
+                )
+            assert isinstance(namespace, type)
+            signature[function.__qualname__.rsplit('.', maxsplit=1)[0]] = namespace
+        for parameter_name, api_type in function.__annotations__.items():
+            signature[parameter_name] = api_type
+        return callable.__name__, signature
 
-            for parameter_name, api_type in action.__call__.__annotations__.items():  # type: ignore
-                parameters[parameter_name] = self.get_type(api_type)
-            _action = InstantaneousAction(action_name, _parameters=parameters)
-            self._actions[action_name] = _action
-            self._api_actions[action_name] = action
-            return _action, _action.parameters
-        else:
-            if "." in action.__qualname__:
-                # Add defining class of action to parameters.
-                namespace = sys.modules[action.__module__]
-                for name in action.__qualname__.split(".")[:-1]:
-                    # Note: Use "context" to resolve potential relay to Python source file.
-                    namespace = (
-                        namespace.__dict__["context"][name]
-                        if "context" in namespace.__dict__.keys()
-                        else namespace.__dict__[name]
-                    )
-                assert isinstance(namespace, type)
-                parameters[
-                    action.__qualname__.rsplit(".", maxsplit=1)[0]
-                ] = self.get_type(namespace)
-            # Add action's parameter types, without its return type.
-            for parameter_name, api_type in list(action.__annotations__.items())[:-1]:
-                parameters[parameter_name] = self.get_type(api_type)
-            _action = InstantaneousAction(_action.__name__, parameters)
-            self._actions[_action.__name__] = _action
-            self._api_actions[_action.__name__] = _action
-            return _action, _action.parameters
+    def set_api_actions(self, functions: Iterable[Callable[..., object]]) -> None:
+        """
+        Set API functions as executable actions. Their __name__ must match with action creation.
+        """
+        for function in functions:
+            name = function.__name__
+            assert name not in self._api_actions.keys()
+            self._api_actions[name] = function
 
     def get_executable_action(self, action: ActionInstance) -> Tuple[Callable[..., object], List[object]]:
-        """Return API callable action corresponding to the given UP action."""
+        """Return API callable and parameters corresponding to the given action."""
         if action.action.name not in self._api_actions.keys():
             raise ValueError(f"No corresponding action defined for {action}!")
 
@@ -215,10 +248,26 @@ class Bridge:
         problem.add_objects(self._objects.values() if objects is None else objects)
         return problem
 
-    def solve(self, problem: Problem) -> Optional[List[ActionInstance]]:
+    def set_initial_values(self, problem: Problem) -> None:
+        """Set all initial values using the functions corresponding to this problem's fluents."""
+        type_objects: Dict[type, List[Object]] = {}
+        # Collect objects in problem for all parameters of all fluents.
+        for fluent in problem.fluents:
+            for parameter in fluent.signature:
+                # Avoid redundancy.
+                if parameter.type not in type_objects.keys():
+                    type_objects[parameter.type] = list(problem.objects(parameter.type))
+        for fluent in problem.fluents:
+            # Loop through all parameter value combinations.
+            for parameters in itertools.product(*[type_objects[parameter.type] for parameter in fluent.signature]):
+                # Use the fluent function to calculate the initial values.
+                value = self.get_object(self._fluent_functions[fluent.name](*[self._api_objects[parameter.name] for parameter in parameters]))
+                problem.set_initial_value(fluent(*parameters), value)
+
+    def solve(self, problem: Problem, planner_name: Optional[str]=None) -> Optional[List[ActionInstance]]:
         """Solve planning problem and return list of UP actions."""
         result = OneshotPlanner(
-            name="aries",
+            name=planner_name,
             problem_kind=problem.kind,
             optimality_guarantee=OptimalityGuarantee.SOLVED_OPTIMALLY,
         ).solve(problem)
