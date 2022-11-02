@@ -127,7 +127,7 @@ class Bridge:
             # Note: For class methods, the first argument is the instance.
             action_name = action.__qualname__.split(".")[-1]
 
-            for parameter_name, api_type in action.__call__.__annotations__.items():
+            for parameter_name, api_type in action.__call__.__annotations__.items():  # type: ignore
                 parameters[parameter_name] = self.get_type(api_type)
             _action = InstantaneousAction(action_name, _parameters=parameters)
             self._actions[action_name] = _action
