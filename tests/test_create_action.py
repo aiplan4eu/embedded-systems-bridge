@@ -101,6 +101,8 @@ class ActionDefinitionsExample(Bridge):
         #     place_item_onto_robot)
         # self.place, (robot, item, location) = self.create_action("place",
         #     place_item_onto_robot.__annotations__, place_item_onto_robot)
+        # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot,
+        #     robot=Robot, item=Item, location=Location)
         self.place.add_precondition(self.item_at(item, location))
         self.place.add_precondition(self.robot_at(robot, location))
         self.place.add_precondition(And(Not(self.robot_has(robot, item)) for item in self.items))
@@ -111,6 +113,9 @@ class ActionDefinitionsExample(Bridge):
         self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
             PassItemAction.__call__.__annotations__, PassItemAction())
         # In this case, you need to provide the signature of the __call_ method explicitly.
+        #  You can do this explicitly using kwargs if you prefer:
+        # self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
+        #     callable=PassItemAction(), robot_from=Robot, robot_to=Robot, item=Item)
         # As before, providing the callable PassItemAction() can be done later than at action declaration.
         self.pass_item.add_precondition(self.robot_has(robot_from, item))
         self.pass_item.add_precondition(And(Not(self.robot_has(robot_to, item))
