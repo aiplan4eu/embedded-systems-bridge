@@ -80,13 +80,13 @@ class ActionDefinitionsExample(Bridge):
 
         # Create action from a class method:
         self.move, (robot, location_from, location_to) \
-            = self.create_action(*self.get_action_parameters(Robot.move))
+            = self.create_action(*self.get_name_and_signature(Robot.move))
         self.set_api_actions([Robot.move])
         # The purpose of the set_api_actions() method is to make action declaration independent of
         #  its implementation. For example, the later can be implemented in a subclass of the former.
         # The following command would achieve the same in one step:
         # self.move, (robot, location_from, location_to) \
-        #     = self.create_action(*self.get_action_parameters(Robot.move), Robot.move)
+        #     = self.create_action(*self.get_name_and_signature(Robot.move), Robot.move)
         self.move.add_precondition(self.robot_at(robot, location_from))
         self.move.add_precondition(And(Not(self.robot_at(robot, location_to))
             for robot in self.robots))
@@ -97,7 +97,7 @@ class ActionDefinitionsExample(Bridge):
         self.place, (robot, item, location) = self.create_action_from_function(place_item_onto_robot)
         # For functions which do not use self as parameter, create_action_from_function() is the
         #  same as any one of the following commands:
-        # self.place, (robot, item, location) = self.create_action(*self.get_action_parameters(place_item_onto_robot),
+        # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot),
         #     place_item_onto_robot)
         # self.place, (robot, item, location) = self.create_action("place",
         #     place_item_onto_robot.__annotations__, place_item_onto_robot)
@@ -112,7 +112,7 @@ class ActionDefinitionsExample(Bridge):
         # Create action from a class instance:
         self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
             PassItemAction.__call__.__annotations__, PassItemAction())
-        # In this case, you need to provide the signature of the __call_ method explicitly.
+        # In this case, you need to provide the signature of the __call__ method explicitly.
         #  You can do this explicitly using kwargs if you prefer:
         # self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
         #     callable=PassItemAction(), robot_from=Robot, robot_to=Robot, item=Item)

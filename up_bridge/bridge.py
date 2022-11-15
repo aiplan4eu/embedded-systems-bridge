@@ -158,21 +158,16 @@ class Bridge:
         return self.create_action(function.__name__, function.__annotations__,
             callable=function if set_callable else None)
 
-    def get_action_parameters(
-        self, callable: Callable[..., object], function: Optional[Callable[..., object]] = None
-    ) -> Tuple[str, Dict[str, type]]:
+    def get_name_and_signature(self, method: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
         """
-        Return name from callable and API signature from class function (or method).
-        By default, callable is used as function as well.
-        If callable is a class method, implicitly return its defining class as first parameter.
+        Return name and API signature from class method. Implicitly return its defining class as
+         first parameter if it exists.
         """
-        if function is None:
-            function = callable
         signature: Dict[str, Type] = OrderedDict()
-        if hasattr(function, '__qualname__') and '.' in function.__qualname__:
-            # Add defining class of function to parameters.
-            namespace = sys.modules[function.__module__]
-            for name in function.__qualname__.split('.')[:-1]:
+        if hasattr(method, '__qualname__') and '.' in method.__qualname__:
+            # Add defining class of method to parameters.
+            namespace = sys.modules[method.__module__]
+            for name in method.__qualname__.split('.')[:-1]:
                 # Note: Use "context" to resolve potential relay to Python source file.
                 namespace = (
                     namespace.__dict__["context"][name]
@@ -180,10 +175,10 @@ class Bridge:
                     else namespace.__dict__[name]
                 )
             assert isinstance(namespace, type)
-            signature[function.__qualname__.rsplit('.', maxsplit=1)[0]] = namespace
-        for parameter_name, api_type in function.__annotations__.items():
+            signature[method.__qualname__.rsplit('.', maxsplit=1)[0]] = namespace
+        for parameter_name, api_type in method.__annotations__.items():
             signature[parameter_name] = api_type
-        return callable.__name__, signature
+        return method.__name__, signature
 
     def set_api_actions(self, functions: Iterable[Callable[..., object]]) -> None:
         """
