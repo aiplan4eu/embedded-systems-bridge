@@ -145,13 +145,26 @@ class Bridge:
         self, function: Callable[..., object], set_callable: bool=True
     ) -> Tuple[InstantaneousAction, List[Parameter]]:
         """
-        Create UP InstantaneousAction based on function.
-        By default, also set function as the action's callable. To avoid this, set_callable=False.
+        Create UP InstantaneousAction based on function. If set_callable is True, also set function
+         as the executable action's callable.
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects.
         """
         return self.create_action(function.__name__, function.__annotations__,
-            callable=function if set_callable else None)
+            function if set_callable else None)
+
+    def create_action_from_method(
+        self, method: Callable[..., object], set_callable: bool=True
+    ) -> Tuple[InstantaneousAction, List[Parameter]]:
+        """
+        Create UP InstantaneousAction based on method. Implicitly use its defining class as
+         first action parameter if it exists. If set_callable is True, also set method
+         as the executable action's callable.
+        Return the InstantaneousAction with its parameters for convenient definition of its
+         preconditions and effects.
+        """
+        return self.create_action(*self.get_name_and_signature(method),
+            method if set_callable else None)
 
     def get_name_and_signature(self, method: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
         """
