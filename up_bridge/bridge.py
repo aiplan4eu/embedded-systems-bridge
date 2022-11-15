@@ -147,14 +147,16 @@ class Bridge:
         return action, action.parameters
 
     def create_action_from_function(
-        self, function: Callable[..., object]
+        self, function: Callable[..., object], set_callable: bool=True
     ) -> Tuple[InstantaneousAction, List[Parameter]]:
         """
         Create UP InstantaneousAction based on function.
+        By default, also set function as the action's callable. To avoid this, set_callable=False.
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects.
         """
-        return self.create_action(*self.get_action_parameters(function), callable=function)
+        return self.create_action(function.__name__, function.__annotations__,
+            callable=function if set_callable else None)
 
     def get_action_parameters(
         self, callable: Callable[..., object], function: Optional[Callable[..., object]] = None
