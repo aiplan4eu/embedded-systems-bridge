@@ -90,7 +90,8 @@ class Bridge:
             self.get_type(result_api_type) if result_api_type else BoolType(),
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
+                for parameter_name, api_type in (dict(signature, **kwargs)
+                    if signature else kwargs).items() if parameter_name != 'return'
             ),
         )
         if callable:
@@ -102,14 +103,8 @@ class Bridge:
         Create UP fluent based on function, which calculates the fluent's values
          in the application domain for problem initialization.
         """
-        annotations = function.__annotations__
-        return self.create_fluent(
-            function.__name__,
-            annotations['return'],
-            OrderedDict((parameter_name, api_type) for parameter_name, api_type in list(annotations.items())
-                if parameter_name != 'return'),
-            callable=function,
-        )
+        return self.create_fluent(function.__name__, function.__annotations__['return'],
+            function.__annotations__, callable=function)
 
     def set_fluent_functions(self, functions: Iterable[Callable[..., object]]) -> None:
         """Set functions as fluent functions in the application domain. Their __name__ must match with fluent creation."""
