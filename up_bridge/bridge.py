@@ -70,6 +70,28 @@ class Bridge:
 
         raise ValueError(f"No corresponding UserType defined for {api_object}!")
 
+    def get_name_and_signature(self, method: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
+        """
+        Return name and API signature from class method. Implicitly return its defining class as
+         first parameter if it exists.
+        """
+        signature: Dict[str, Type] = OrderedDict()
+        if hasattr(method, '__qualname__') and '.' in method.__qualname__:
+            # Add defining class of method to parameters.
+            namespace = sys.modules[method.__module__]
+            for name in method.__qualname__.split('.')[:-1]:
+                # Note: Use "context" to resolve potential relay to Python source file.
+                namespace = (
+                    namespace.__dict__["context"][name]
+                    if "context" in namespace.__dict__.keys()
+                    else namespace.__dict__[name]
+                )
+            assert isinstance(namespace, type)
+            signature[method.__qualname__.rsplit('.', maxsplit=1)[0]] = namespace
+        for parameter_name, api_type in method.__annotations__.items():
+            signature[parameter_name] = api_type
+        return method.__name__, signature
+
     def create_fluent(
         self,
         name: str,
@@ -90,8 +112,8 @@ class Bridge:
             self.get_type(result_api_type) if result_api_type else BoolType(),
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (dict(signature, **kwargs)
-                    if signature else kwargs).items() if parameter_name != 'return'
+                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
+                if parameter_name != 'return'
             ),
         )
         if callable:
@@ -103,8 +125,9 @@ class Bridge:
         Create UP fluent based on function, which calculates the fluent's values
          in the application domain for problem initialization.
         """
-        return self.create_fluent(function.__name__, function.__annotations__['return'],
-            function.__annotations__, callable=function)
+        return self.create_fluent(
+            function.__name__, function.__annotations__['return'], function.__annotations__, callable=function
+        )
 
     def set_fluent_functions(self, functions: Iterable[Callable[..., object]]) -> None:
         """Set functions as fluent functions in the application domain. Their __name__ must match with fluent creation."""
@@ -132,8 +155,8 @@ class Bridge:
             # Use signature's types, without its return type.
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in list((dict(signature, **kwargs) if signature else kwargs).items())
-                    if parameter_name != 'return'
+                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
+                if parameter_name != 'return'
             ),
         )
         self._actions[name] = action
@@ -150,8 +173,7 @@ class Bridge:
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects.
         """
-        return self.create_action(function.__name__, function.__annotations__,
-            function if set_callable else None)
+        return self.create_action(function.__name__, function.__annotations__, function if set_callable else None)
 
     def create_action_from_method(
         self, method: Callable[..., object], set_callable: bool=True
@@ -163,30 +185,7 @@ class Bridge:
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects.
         """
-        return self.create_action(*self.get_name_and_signature(method),
-            method if set_callable else None)
-
-    def get_name_and_signature(self, method: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
-        """
-        Return name and API signature from class method. Implicitly return its defining class as
-         first parameter if it exists.
-        """
-        signature: Dict[str, Type] = OrderedDict()
-        if hasattr(method, '__qualname__') and '.' in method.__qualname__:
-            # Add defining class of method to parameters.
-            namespace = sys.modules[method.__module__]
-            for name in method.__qualname__.split('.')[:-1]:
-                # Note: Use "context" to resolve potential relay to Python source file.
-                namespace = (
-                    namespace.__dict__["context"][name]
-                    if "context" in namespace.__dict__.keys()
-                    else namespace.__dict__[name]
-                )
-            assert isinstance(namespace, type)
-            signature[method.__qualname__.rsplit('.', maxsplit=1)[0]] = namespace
-        for parameter_name, api_type in method.__annotations__.items():
-            signature[parameter_name] = api_type
-        return method.__name__, signature
+        return self.create_action(*self.get_name_and_signature(method), method if set_callable else None)
 
     def set_api_actions(self, functions: Iterable[Callable[..., object]]) -> None:
         """
@@ -202,13 +201,9 @@ class Bridge:
         if action.action.name not in self._api_actions.keys():
             raise ValueError(f"No corresponding action defined for {action}!")
 
-        return (
-            self._api_actions[action.action.name],
-            [
-                self._api_objects[parameter.object().name]
-                for parameter in action.actual_parameters
-            ],
-        )
+        return self._api_actions[action.action.name], [
+            self._api_objects[parameter.object().name] for parameter in action.actual_parameters
+        ]
 
     def create_object(self, name: str, api_object: object) -> Object:
         """Create UP object with name based on api_object."""
@@ -223,9 +218,7 @@ class Bridge:
         """Create UP objects based on api_objects and kwargs."""
         return [
             self.create_object(name, api_object)
-            for name, api_object in (
-                dict(api_objects, **kwargs) if api_objects else kwargs
-            ).items()
+            for name, api_object in (dict(api_objects, **kwargs) if api_objects else kwargs).items()
         ]
 
     def create_enum_objects(self, enum: typing.Type[Enum]) -> List[Object]:
@@ -234,11 +227,7 @@ class Bridge:
 
     def get_object(self, api_object: object) -> Object:
         """Return UP object corresponding to api_object if it exists, else api_object itself."""
-        name = (
-            getattr(api_object, "name")
-            if hasattr(api_object, "name")
-            else str(api_object)
-        )
+        name = getattr(api_object, "name") if hasattr(api_object, "name") else str(api_object)
         return self._objects[name] if name in self._objects.keys() else api_object
 
     def define_problem(
