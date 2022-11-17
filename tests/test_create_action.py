@@ -26,6 +26,9 @@ class Item:
     def __repr__(self) -> str:
         return self.name
 
+    def item_at(self, location: Location) -> bool:
+        return location == self.location
+
 
 class Robot:
     def __init__(self, name: str, location: Location) -> None:
@@ -35,6 +38,12 @@ class Robot:
 
     def __repr__(self) -> str:
         return self.name
+
+    def robot_at(self, location: Location) -> bool:
+        return location == self.location
+
+    def robot_has(self, item: Item) -> bool:
+        return item == self.item
 
     def move(self, location_from: Location, location_to: Location) -> None:
         self.location = location_to
@@ -74,9 +83,9 @@ class ActionDefinitionsExample(Bridge):
         self.api_robot1 = Robot("robot1", Location.A)
         self.api_robot2 = Robot("robot2", Location.B)
         self.robot1, self.robot2 = self.robots = self.create_objects(robot1=self.api_robot1, robot2=self.api_robot2)
-        self.item_at = self.create_fluent_from_function(self.get_item_at)
-        self.robot_at = self.create_fluent_from_function(self.get_robot_at)
-        self.robot_has = self.create_fluent_from_function(self.get_robot_has)
+        self.item_at = self.create_fluent_from_function(Item.item_at)
+        self.robot_at = self.create_fluent_from_function(Robot.robot_at)
+        self.robot_has = self.create_fluent_from_function(Robot.robot_has)
 
         # Create action from a class method:
         self.move, (robot, location_from, location_to) \
@@ -122,18 +131,6 @@ class ActionDefinitionsExample(Bridge):
         self.pass_item.add_effect(self.robot_has(robot_from, item), False)
         self.pass_item.add_effect(self.robot_has(robot_to, item), True)
 
-    @staticmethod
-    def get_item_at(item: Item, location: Location) -> bool:
-        return location == item.location
-
-    @staticmethod
-    def get_robot_at(robot: Robot, location: Location) -> bool:
-        return location == robot.location
-
-    @staticmethod
-    def get_robot_has(robot: Robot, item: Item) -> bool:
-        return item == robot.item
-
     def test(self) -> None:
         problem = Problem()
         problem.add_objects(self.locations)
@@ -154,8 +151,8 @@ class ActionDefinitionsExample(Bridge):
             for action in result.plan.actions:
                 callable, parameters = self.get_executable_action(action)
                 callable(*parameters)
-        assert self.get_robot_has(self.api_robot2, self.api_tool)
-        assert self.get_robot_at(self.api_robot2, Location.C)
+        assert self.api_robot2.robot_has(self.api_tool)
+        assert self.api_robot2.robot_at(Location.C)
 
 
 def test_create_action() -> None:
