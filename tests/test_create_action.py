@@ -85,7 +85,7 @@ class ActionDefinitionsExample(Bridge):
         # The purpose of the set_api_actions() method is to make action declaration independent of
         #  its implementation. For example, the later can be implemented in a subclass of the former.
         # The following command would achieve the same in one step:
-        # self.move, (robot, location_from, location_to) = self.create_action_from_method(Robot.move)
+        # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move)
         self.move.add_precondition(self.robot_at(robot, location_from))
         self.move.add_precondition(And(Not(self.robot_at(robot, location_to))
             for robot in self.robots))
