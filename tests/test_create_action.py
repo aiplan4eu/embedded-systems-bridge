@@ -88,29 +88,32 @@ class ActionDefinitionsExample(Bridge):
         self.robot_has = self.create_fluent_from_function(Robot.robot_has)
 
         # Create action from a class method:
-        self.move, (robot, location_from, location_to) \
-            = self.create_action(*self.get_name_and_signature(Robot.move))
+        self.move, (robot, location_from, location_to) = self.create_action(*self.get_name_and_signature(Robot.move))
         self.set_api_actions([Robot.move])
+        # The helper functions `create_action_from_function()` and `get_name_and_signature()`
+        #  treat the defining class of a method (i.e. Robot in this example) as part of the
+        #  action signature because a UP type for that class was created before using
+        #  `create_types()`. Therefore, the method's defining class will implicitly be the first
+        #  parameter of the UP action signature. To avoid this behavior, do not create a UP type
+        #  for the defining class, or call create_action() with an action signature explicitly
+        #  without helper functions.
         # The purpose of the set_api_actions() method is to make action declaration independent of
-        #  its implementation. For example, the later can be implemented in a subclass of the former.
-        # The following command would achieve the same in one step:
+        #  its implementation. Intended usage are cases when the later can be implemented in a
+        #  subclass of the former. The following commands would achieve the same in one step:
         # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move)
+        # self.move, (robot, location_from, location_to) = self.create_action("move", callable=Robot.move, robot=Robot, location_from=Location, location_to=Location)
         self.move.add_precondition(self.robot_at(robot, location_from))
-        self.move.add_precondition(And(Not(self.robot_at(robot, location_to))
-            for robot in self.robots))
+        self.move.add_precondition(And(Not(self.robot_at(robot, location_to)) for robot in self.robots))
         self.move.add_effect(self.robot_at(robot, location_from), False)
         self.move.add_effect(self.robot_at(robot, location_to), True)
 
         # Create action from a function:
         self.place, (robot, item, location) = self.create_action_from_function(place_item_onto_robot)
-        # For functions which do not use self as parameter, create_action_from_function() is the
-        #  same as any one of the following commands:
-        # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot),
-        #     place_item_onto_robot)
-        # self.place, (robot, item, location) = self.create_action("place",
-        #     place_item_onto_robot.__annotations__, place_item_onto_robot)
-        # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot,
-        #     robot=Robot, item=Item, location=Location)
+        # For functions which do not use self as parameter for the UP action,
+        #  create_action_from_function() is the same as any one of the following commands:
+        # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot), place_item_onto_robot)
+        # self.place, (robot, item, location) = self.create_action("place", place_item_onto_robot.__annotations__, place_item_onto_robot)
+        # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot, robot=Robot, item=Item, location=Location)
         self.place.add_precondition(self.item_at(item, location))
         self.place.add_precondition(self.robot_at(robot, location))
         self.place.add_precondition(And(Not(self.robot_has(robot, item)) for item in self.items))

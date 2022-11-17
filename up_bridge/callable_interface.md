@@ -18,4 +18,9 @@ specific cases. All supported cases are listed in the table below.
 
 ![create_action() interface](create_action_interface.drawio.png)
 
+Hint: The helper functions `create_action_from_function()` and `get_name_and_signature()`
+treat the defining class of a method as part of the action signature if you created
+a UP type for that class using `create_types()`. In this case, the method's
+defining class will implicitly be the first parameter of the UP action signature.
+
 See [test_create_action.py](../tests/test_create_action.py) for examples.

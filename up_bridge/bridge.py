@@ -73,7 +73,7 @@ class Bridge:
 
     def get_name_and_signature(self, function: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
         """
-        Return name and API signature from function. If function is a class method and a
+        Return name and API signature of function. If function is a class method and a
          corresponding UP representation exists for its defining class, implicitly return the later
          as first parameter of the signature.
         """
@@ -89,8 +89,9 @@ class Bridge:
                     else api_type.__dict__[name]
                 )
             assert isinstance(api_type, type)
+            # If defining class of function is a subclass of any class for which a UP representation
+            #  has been created, add it as first parameter of signature.
             if any(issubclass(api_type, check_api_type) for check_api_type in self._types.keys()):
-                # Add defining class of function to parameters.
                 signature[function.__qualname__.rsplit('.', maxsplit=1)[0]] = api_type
         for parameter_name, api_type in function.__annotations__.items():
             signature[parameter_name] = api_type
@@ -150,7 +151,9 @@ class Bridge:
             self.set_if_api_signature(name, function.__annotations__)
 
     def set_if_api_signature(self, name: str, signature: Dict[str, type]) -> None:
-        """Determine and store if parameters in signature of function with name are in the application domain."""
+        """
+        Determine and store if any parameter in signature of function with name has a type in the application domain.
+        """
         if any(
             not issubclass(parameter_type, Object)
             for parameter_name, parameter_type in signature.items()
