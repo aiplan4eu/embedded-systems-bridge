@@ -52,7 +52,7 @@ class Bridge:
     def create_types(self, api_types: Iterable[type]) -> None:
         """Create UP user types based on api_types."""
         for api_type in api_types:
-            assert api_type not in self._types.keys()
+            assert api_type not in self._types.keys(), f"Type {api_type} already created!"
             self._types[api_type] = UserType(api_type.__name__)
 
     def get_type(self, api_type: type) -> Type:
@@ -88,7 +88,7 @@ class Bridge:
                     if "context" in api_type.__dict__.keys()
                     else api_type.__dict__[name]
                 )
-            assert isinstance(api_type, type)
+            assert isinstance(api_type, type), f"{api_type} is not a type!"
             # If defining class of function is a subclass of any class for which a UP representation
             #  has been created, add it as first parameter of signature.
             if any(issubclass(api_type, check_api_type) for check_api_type in self._types.keys()):
@@ -112,7 +112,7 @@ class Bridge:
         Optionally, provide a callable which calculates the fluent's values for problem
          initialization. Otherwise, you must set it later.
         """
-        assert name not in self._fluents.keys()
+        assert name not in self._fluents.keys(), f"Fluent {name} already exists!"
         self._fluents[name] = Fluent(
             name,
             self.get_type(result_api_type)
@@ -146,7 +146,7 @@ class Bridge:
         """Set fluent functions. Their __name__ must match with fluent creation."""
         for function in functions:
             name = function.__name__
-            assert name not in self._fluent_functions.keys()
+            assert name not in self._fluent_functions.keys(), f"Fluent {name} already set!"
             self._fluent_functions[name] = function
             self.set_if_api_signature(name, function.__annotations__)
 
@@ -174,7 +174,7 @@ class Bridge:
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects in the UP domain.
         """
-        assert name not in self._actions.keys()
+        assert name not in self._actions.keys(), f"Action {name} already exists!"
         action = InstantaneousAction(
             name,
             # Use signature's types, without its return type.
@@ -209,7 +209,7 @@ class Bridge:
         """
         for function in functions:
             name = function.__name__
-            assert name not in self._api_actions.keys()
+            assert name not in self._api_actions.keys(), f"Action {name} already exists!"
             self._api_actions[name] = function
 
     def get_executable_action(self, action: ActionInstance) -> Tuple[Callable[..., object], List[object]]:
@@ -223,7 +223,7 @@ class Bridge:
 
     def create_object(self, name: str, api_object: object) -> Object:
         """Create UP object with name based on api_object."""
-        assert name not in self._objects.keys()
+        assert name not in self._objects.keys(), f"Object {name} already exists!"
         self._objects[name] = Object(name, self.get_object_type(api_object))
         self._api_objects[name] = api_object
         return self._objects[name]
