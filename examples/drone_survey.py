@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""This is an example of how to use the unified planning bridge.
+
+The problem defined in this example will try to survey a given area with a drone,
+localize some objects, take a closer inspection of the objects and then return to the base station.
+"""
 from unified_planning.shortcuts import *
 from up_bridge.bridge import Bridge
 
 from up_bridge.components import ActionDefinition, UserTypeDefinition
+
 
 class Location(UserTypeDefinition):
     def __init__(self, name, x, y, z, yaw):
@@ -44,39 +50,53 @@ class Area(UserTypeDefinition):
 
 
 class Fluents:
+    @staticmethod
     def robot_at(location: Location) -> bool:
+        print(f"Robot is at {location}")
         return True
 
+    @staticmethod
     def verify_station_at(location: Location) -> bool:
+        print(f"{location} Location is verified")
         return True
 
+    @staticmethod
     def is_surveyed(area: Area) -> bool:
+        print(f"{area} Area is surveyed")
         return True
 
+    @staticmethod
     def is_location_surveyed(area: Area, location: Location) -> bool:
+        print(f"{location} Location is surveyed")
         return True
 
+    @staticmethod
     def is_within_area(area: Area, location: Location) -> bool:
+        print(f"{location} is within {area}")
         return True
 
 
-class Move(ActionDefinition):
+class Move:
     def __call__(self, area: Area, l_from: Location, l_to: Location) -> bool:
+        print(f"Moving from {l_from} to {l_to}")
         return True
 
 
-class CapturePhoto(ActionDefinition):
+class CapturePhoto:
     def __call__(self, area: Area, location: Location) -> bool:
+        print(f"Capturing photo at {location}")
         return True
 
 
-class Survey(ActionDefinition):
+class Survey:
     def __call__(self, area: Area) -> bool:
+        print(f"Surveying {area}")
         return True
 
 
-class GatherInfo(ActionDefinition):
+class GatherInfo:
     def __call__(self, area: Area, location: Location) -> bool:
+        print(f"Gathering info at {location}")
         return True
 
 
@@ -116,7 +136,6 @@ class VerifyStationProblem(Application):
 
         results = []
         for action in action_instances:
-            print(f"Executing {action}")
             (executor, parameters) = self.bridge.get_executable_action(action)
             execute_action = executor(**kwargs)
             result = execute_action(*parameters)
@@ -219,13 +238,15 @@ class VerifyStationProblem(Application):
         return problem
 
 
-def test_drone_problem():
-    """Test DroneProblem."""
+def main():
+    """Main Function."""
     actions = []
     bridge = Bridge()
     demo = VerifyStationProblem(bridge)
     problem = demo.get_problem()
+    print("=== Problem ===")
     with OneshotPlanner(name="aries") as planner:
+        # Aries planner is currently available at: https://github.com/aiplan4eu/up-aries
         result = planner.solve(problem)
         print("*** Result ***")
         for action_instance in result.plan.timed_actions:
@@ -233,6 +254,9 @@ def test_drone_problem():
             actions.append(action_instance[1])
         print("*** End of result ***")
 
+    # Execute the plan
+    print("=== Executing the plan ===")
+    demo.start_execution(actions)
 
 if __name__ == "__main__":
-    test_drone_problem()
+    main()
