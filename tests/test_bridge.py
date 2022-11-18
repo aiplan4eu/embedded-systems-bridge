@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unified_planning.shortcuts import *
+from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 from up_bridge.bridge import Bridge
 
 from up_bridge.components import ActionDefinition, UserTypeDefinition
