@@ -52,18 +52,23 @@ class Area(UserTypeDefinition):
 
 
 class Fluents:
+    @staticmethod
     def robot_at(location: Location) -> bool:
         return True
 
+    @staticmethod
     def verify_station_at(location: Location) -> bool:
         return True
 
+    @staticmethod
     def is_surveyed(area: Area) -> bool:
         return True
 
+    @staticmethod
     def is_location_surveyed(area: Area, location: Location) -> bool:
         return True
 
+    @staticmethod
     def is_within_area(area: Area, location: Location) -> bool:
         return True
 
@@ -89,15 +94,19 @@ class GatherInfo(ActionDefinition):
 
 
 class Actions:
+    @staticmethod
     def move(area: Area, l_from: Location, l_to: Location) -> bool:
         return True
 
+    @staticmethod
     def capture_photo(area: Area, location: Location) -> bool:
         return True
 
+    @staticmethod
     def survey(area: Area) -> bool:
         return True
 
+    @staticmethod
     def gather_info(area: Area, location: Location) -> bool:
         return True
 
@@ -144,15 +153,15 @@ class ProblemDeclaration(Application):
         ]
 
     def create_fluents_from_functions(self, bridge: Bridge):
-        f_robot_at = bridge.create_fluent_from_function(self.robot_at)
+        f_robot_at = bridge.create_fluent_from_function(ProblemDeclaration.robot_at)
         f_verified_station_at = bridge.create_fluent_from_function(
-            self.verify_station_at
+            ProblemDeclaration.verify_station_at
         )
-        f_is_surveyed = bridge.create_fluent_from_function(self.is_surveyed)
+        f_is_surveyed = bridge.create_fluent_from_function(ProblemDeclaration.is_surveyed)
         f_is_location_surveyed = bridge.create_fluent_from_function(
-            self.is_location_surveyed
+            ProblemDeclaration.is_location_surveyed
         )
-        f_is_within_area = bridge.create_fluent_from_function(self.is_within_area)
+        f_is_within_area = bridge.create_fluent_from_function(ProblemDeclaration.is_within_area)
 
         return {
             "f_robot_at": f_robot_at,
