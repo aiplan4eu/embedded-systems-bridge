@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable, Dict
 from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 from up_bridge.bridge import Bridge
 
@@ -366,9 +367,9 @@ class ProblemDeclaration(Application):
     def declare_problem(
         self,
         bridge: Bridge,
-        dec_fluents: callable,
-        dec_objects: callable,
-        dec_actions: callable,
+        dec_fluents: Callable[[Bridge], Dict[str, Callable[..., object]]],
+        dec_objects: Callable[[Bridge], Dict[str, Callable[..., object]]],
+        dec_actions: Callable[[Bridge, Dict[str, Callable[..., object]]], Dict[str, Callable[..., object]]],
     ):
 
         fluents = dec_fluents(bridge)
