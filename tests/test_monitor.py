@@ -13,23 +13,10 @@
 # limitations under the License.
 
 import unittest
-from typing import Tuple
 from up_bridge.plexmo.monitor import SequentialPlanMonitor
-
-from unified_planning.plans.plan import ActionInstance
-from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.test.examples import get_example_problems
 from unified_planning.model import UPCOWState
 from unified_planning.engines import SequentialSimulator
-
-
-def get_example_plan() -> SequentialPlan:
-    example_problems = get_example_problems()
-    return example_problems["basic"].plan
-
-
-def succeeding_check_cb(action: ActionInstance) -> Tuple[bool, str]:
-    return True, "True"
 
 
 class TestSequentialMonitor(unittest.TestCase):
