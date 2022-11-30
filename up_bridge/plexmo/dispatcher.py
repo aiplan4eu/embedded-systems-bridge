@@ -79,9 +79,6 @@ class SequentialPlanDispatcher:
     def status(self) -> str:
         return self._status
 
-    def set_plan(self, plan: SequentialPlan):
-        self._plan = plan
-
     def set_replan_callback(self, callback):
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
