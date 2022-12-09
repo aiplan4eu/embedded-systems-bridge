@@ -29,13 +29,20 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 [project.optional-dependencies]
-dev = ["black", "pylint", "pytest"]
+dev = ["black", "pylint", "pytest", "pre-commit"]
 
 ####################################################################################################
 #
 # DEVELOPMENT
 #
 ####################################################################################################
+[tool.isort]
+ensure_newline_before_comments = true
+force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 100
+multi_line_output = 3
+use_parentheses = true
 
 [tool.black]
 exclude = '''
@@ -48,6 +55,7 @@ exclude = '''
   |env
 )/
 '''
+line-length = 100
 target-version = ["py36", "py37", "py38"]
 
 # ------------------------------------------------------------------------------
@@ -75,9 +83,9 @@ disable = [
   "duplicate-code",
   "fixme",
   "too-few-public-methods",
-] 
-extension-pkg-whitelist = [] # "grpc"       
-jobs = 1 # 0 for Auto-detect
+]
+extension-pkg-whitelist = [] # "grpc"
+jobs = 0 # 0 for Auto-detect
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
