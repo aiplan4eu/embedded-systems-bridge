@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-from typing import Optional
 from enum import Enum
+from typing import Optional
+
+import unified_planning as up
 from unified_planning.model import Problem
 from unified_planning.shortcuts import And, Not, OneshotPlanner
-import unified_planning as up
+
 from up_bridge import Bridge
 
 """
@@ -13,9 +15,9 @@ Examples for different ways to define actions on the application side and how to
 
 
 class Location(Enum):
-    A = 'A'
-    B = 'B'
-    C = 'C'
+    A = "A"
+    B = "B"
+    C = "C"
 
 
 class Item:
@@ -82,13 +84,17 @@ class ActionDefinitionsExample(Bridge):
         self.items = [self.tool]
         self.api_robot1 = Robot("robot1", Location.A)
         self.api_robot2 = Robot("robot2", Location.B)
-        self.robot1, self.robot2 = self.robots = self.create_objects(robot1=self.api_robot1, robot2=self.api_robot2)
+        self.robot1, self.robot2 = self.robots = self.create_objects(
+            robot1=self.api_robot1, robot2=self.api_robot2
+        )
         self.item_at = self.create_fluent_from_function(Item.item_at)
         self.robot_at = self.create_fluent_from_function(Robot.robot_at)
         self.robot_has = self.create_fluent_from_function(Robot.robot_has)
 
         # Create action from a class method:
-        self.move, (robot, location_from, location_to) = self.create_action(*self.get_name_and_signature(Robot.move))
+        self.move, (robot, location_from, location_to) = self.create_action(
+            *self.get_name_and_signature(Robot.move)
+        )
         self.set_api_actions([Robot.move])
         # The helper functions `create_action_from_function()` and `get_name_and_signature()`
         #  treat the defining class of a method (i.e. Robot in this example) as part of the
@@ -103,12 +109,16 @@ class ActionDefinitionsExample(Bridge):
         # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move)
         # self.move, (robot, location_from, location_to) = self.create_action("move", callable=Robot.move, robot=Robot, location_from=Location, location_to=Location)
         self.move.add_precondition(self.robot_at(robot, location_from))
-        self.move.add_precondition(And(Not(self.robot_at(robot, location_to)) for robot in self.robots))
+        self.move.add_precondition(
+            And(Not(self.robot_at(robot, location_to)) for robot in self.robots)
+        )
         self.move.add_effect(self.robot_at(robot, location_from), False)
         self.move.add_effect(self.robot_at(robot, location_to), True)
 
         # Create action from a function:
-        self.place, (robot, item, location) = self.create_action_from_function(place_item_onto_robot)
+        self.place, (robot, item, location) = self.create_action_from_function(
+            place_item_onto_robot
+        )
         # For functions which do not use self as parameter for the UP action,
         #  create_action_from_function() is the same as any one of the following commands:
         # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot), place_item_onto_robot)
@@ -121,16 +131,18 @@ class ActionDefinitionsExample(Bridge):
         self.place.add_effect(self.robot_has(robot, item), True)
 
         # Create action from a class instance:
-        self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
-            PassItemAction.__call__.__annotations__, PassItemAction())
+        self.pass_item, (robot_from, robot_to, item) = self.create_action(
+            "pass_item", PassItemAction.__call__.__annotations__, PassItemAction()
+        )
         # In this case, you need to provide the signature of the __call__ method explicitly.
         #  You can do this explicitly using kwargs if you prefer:
         # self.pass_item, (robot_from, robot_to, item) = self.create_action("pass_item",
         #     callable=PassItemAction(), robot_from=Robot, robot_to=Robot, item=Item)
         # As before, providing the callable PassItemAction() can be done later than at action declaration.
         self.pass_item.add_precondition(self.robot_has(robot_from, item))
-        self.pass_item.add_precondition(And(Not(self.robot_has(robot_to, item))
-            for item in self.items))
+        self.pass_item.add_precondition(
+            And(Not(self.robot_has(robot_to, item)) for item in self.items)
+        )
         self.pass_item.add_effect(self.robot_has(robot_from, item), False)
         self.pass_item.add_effect(self.robot_has(robot_to, item), True)
 
@@ -163,5 +175,5 @@ def test_create_action() -> None:
     ActionDefinitionsExample().test()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_create_action()

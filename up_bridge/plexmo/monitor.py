@@ -13,11 +13,12 @@
 # limitations under the License.
 
 from typing import List, Tuple
-from unified_planning.model.problem import Problem
-from unified_planning.plans.plan import ActionInstance
+
 from unified_planning.engines import SequentialSimulator
-from unified_planning.model.state import ROState
 from unified_planning.model.fnode import FNode
+from unified_planning.model.problem import Problem
+from unified_planning.model.state import ROState
+from unified_planning.plans.plan import ActionInstance
 
 
 class SequentialPlanMonitor:

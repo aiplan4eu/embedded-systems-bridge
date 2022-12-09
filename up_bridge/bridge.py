@@ -20,11 +20,9 @@ from enum import Enum
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from unified_planning.engines import OptimalityGuarantee
-from unified_planning.model import (Fluent, InstantaneousAction, Object,
-                                    Parameter, Problem, Type)
+from unified_planning.model import Fluent, InstantaneousAction, Object, Parameter, Problem, Type
 from unified_planning.plans import ActionInstance
-from unified_planning.shortcuts import (BoolType, IntType, OneshotPlanner,
-                                        RealType, UserType)
+from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
 
 class Bridge:
@@ -71,17 +69,19 @@ class Bridge:
 
         raise ValueError(f"No corresponding UserType defined for {api_object}!")
 
-    def get_name_and_signature(self, function: Callable[..., object]) -> Tuple[str, Dict[str, type]]:
+    def get_name_and_signature(
+        self, function: Callable[..., object]
+    ) -> Tuple[str, Dict[str, type]]:
         """
         Return name and API signature of function. If function is a class method and a
          corresponding UP representation exists for its defining class, implicitly return the later
          as first parameter of the signature.
         """
         signature: Dict[str, Type] = OrderedDict()
-        if hasattr(function, '__qualname__') and '.' in function.__qualname__:
+        if hasattr(function, "__qualname__") and "." in function.__qualname__:
             # Determine defining class of function.
             api_type = sys.modules[function.__module__]
-            for name in function.__qualname__.split('.')[:-1]:
+            for name in function.__qualname__.split(".")[:-1]:
                 # Note: Use "context" to resolve potential relay to Python source file.
                 api_type = (
                     api_type.__dict__["context"][name]
@@ -92,7 +92,7 @@ class Bridge:
             # If defining class of function is a subclass of any class for which a UP representation
             #  has been created, add it as first parameter of signature.
             if any(issubclass(api_type, check_api_type) for check_api_type in self._types.keys()):
-                signature[function.__qualname__.rsplit('.', maxsplit=1)[0]] = api_type
+                signature[function.__qualname__.rsplit(".", maxsplit=1)[0]] = api_type
         for parameter_name, api_type in function.__annotations__.items():
             signature[parameter_name] = api_type
         return function.__name__, signature
@@ -117,13 +117,15 @@ class Bridge:
             name,
             self.get_type(result_api_type)
             if result_api_type
-            else self.get_type(signature['return'])
-            if signature and 'return' in signature.keys()
+            else self.get_type(signature["return"])
+            if signature and "return" in signature.keys()
             else BoolType(),
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
-                if parameter_name != 'return'
+                for parameter_name, api_type in (
+                    dict(signature, **kwargs) if signature else kwargs
+                ).items()
+                if parameter_name != "return"
             ),
         )
         if callable:
@@ -131,7 +133,9 @@ class Bridge:
             self.set_if_api_signature(name, dict(signature, **kwargs) if signature else kwargs)
         return self._fluents[name]
 
-    def create_fluent_from_function(self, function: Callable[..., object], set_callable: bool = True) -> Fluent:
+    def create_fluent_from_function(
+        self, function: Callable[..., object], set_callable: bool = True
+    ) -> Fluent:
         """
         Create UP fluent based on function, which calculates the fluent's values
          for problem initialization. If function is a class method and a corresponding UP
@@ -140,7 +144,9 @@ class Bridge:
          you must set it later.
         """
         name, signature = self.get_name_and_signature(function)
-        return self.create_fluent(name, signature=signature, callable=function if set_callable else None)
+        return self.create_fluent(
+            name, signature=signature, callable=function if set_callable else None
+        )
 
     def set_fluent_functions(self, functions: Iterable[Callable[..., object]]) -> None:
         """Set fluent functions. Their __name__ must match with fluent creation."""
@@ -157,7 +163,7 @@ class Bridge:
         if any(
             not issubclass(parameter_type, Object)
             for parameter_name, parameter_type in signature.items()
-            if parameter_name != 'return'
+            if parameter_name != "return"
         ):
             self._api_function_names.add(name)
 
@@ -180,8 +186,10 @@ class Bridge:
             # Use signature's types, without its return type.
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (dict(signature, **kwargs) if signature else kwargs).items()
-                if parameter_name != 'return'
+                for parameter_name, api_type in (
+                    dict(signature, **kwargs) if signature else kwargs
+                ).items()
+                if parameter_name != "return"
             ),
         )
         self._actions[name] = action
@@ -190,7 +198,7 @@ class Bridge:
         return action, action.parameters
 
     def create_action_from_function(
-        self, function: Callable[..., object], set_callable: bool=True
+        self, function: Callable[..., object], set_callable: bool = True
     ) -> Tuple[InstantaneousAction, List[Parameter]]:
         """
         Create UP InstantaneousAction based on function. If function is a class method and a
@@ -201,7 +209,9 @@ class Bridge:
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects in the UP domain.
         """
-        return self.create_action(*self.get_name_and_signature(function), function if set_callable else None)
+        return self.create_action(
+            *self.get_name_and_signature(function), function if set_callable else None
+        )
 
     def set_api_actions(self, functions: Iterable[Callable[..., object]]) -> None:
         """
@@ -212,7 +222,9 @@ class Bridge:
             assert name not in self._api_actions.keys(), f"Action {name} already exists!"
             self._api_actions[name] = function
 
-    def get_executable_action(self, action: ActionInstance) -> Tuple[Callable[..., object], List[object]]:
+    def get_executable_action(
+        self, action: ActionInstance
+    ) -> Tuple[Callable[..., object], List[object]]:
         """Return API callable and parameters corresponding to the given action."""
         if action.action.name not in self._api_actions.keys():
             raise ValueError(f"No corresponding action defined for {action}!")
@@ -271,7 +283,9 @@ class Bridge:
                     type_objects[parameter.type] = list(problem.objects(parameter.type))
         for fluent in problem.fluents:
             # Loop through all parameter value combinations.
-            for parameters in itertools.product(*[type_objects[parameter.type] for parameter in fluent.signature]):
+            for parameters in itertools.product(
+                *[type_objects[parameter.type] for parameter in fluent.signature]
+            ):
                 # Use the fluent function to calculate the initial values.
                 value = (
                     self.get_object(
@@ -284,7 +298,9 @@ class Bridge:
                 )
                 problem.set_initial_value(fluent(*parameters), value)
 
-    def solve(self, problem: Problem, planner_name: Optional[str]=None) -> Optional[List[ActionInstance]]:
+    def solve(
+        self, problem: Problem, planner_name: Optional[str] = None
+    ) -> Optional[List[ActionInstance]]:
         """Solve planning problem and return list of UP actions."""
         result = OneshotPlanner(
             name=planner_name,

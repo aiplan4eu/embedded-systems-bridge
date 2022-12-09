@@ -18,8 +18,8 @@ The problem defined in this example will try to survey a given area with a drone
 localize some objects, take a closer inspection of the objects and then return to the base station.
 """
 from unified_planning.shortcuts import *
-from up_bridge.bridge import Bridge
 
+from up_bridge.bridge import Bridge
 from up_bridge.components import ActionDefinition, UserTypeDefinition
 
 
@@ -150,13 +150,9 @@ class VerifyStationProblem(Application):
         self.bridge.create_types([Location, Area])
 
         f_robot_at = self.bridge.create_fluent_from_function(self.robot_at)
-        f_verified_station_at = self.bridge.create_fluent_from_function(
-            self.verify_station_at
-        )
+        f_verified_station_at = self.bridge.create_fluent_from_function(self.verify_station_at)
         f_is_surveyed = self.bridge.create_fluent_from_function(self.is_surveyed)
-        f_is_location_surveyed = self.bridge.create_fluent_from_function(
-            self.is_location_surveyed
-        )
+        f_is_location_surveyed = self.bridge.create_fluent_from_function(self.is_location_surveyed)
         f_is_within_area = self.bridge.create_fluent_from_function(self.is_within_area)
 
         o_l1 = self.bridge.create_object(str(self.l1), self.l1)
@@ -184,9 +180,7 @@ class VerifyStationProblem(Application):
         capture_photo.add_precondition(f_is_location_surveyed(a, l))
         capture_photo.add_precondition(f_robot_at(l))
         capture_photo.add_effect(f_verified_station_at(l), True)
-        capture_photo.add_effect(
-            f_robot_at(l), True
-        )  # Since using instantaneous actions
+        capture_photo.add_effect(f_robot_at(l), True)  # Since using instantaneous actions
 
         survey, a = self.bridge.create_action("Survey", callable=self.survey, area=Area)
         survey.add_precondition(Not(f_is_surveyed(a)))
@@ -257,6 +251,7 @@ def main():
     # Execute the plan
     print("=== Executing the plan ===")
     demo.start_execution(actions)
+
 
 if __name__ == "__main__":
     main()

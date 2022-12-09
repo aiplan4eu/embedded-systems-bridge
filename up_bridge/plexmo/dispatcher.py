@@ -30,10 +30,7 @@ class SequentialPlanDispatcher:
         self._dispatched_position = 0
         replanned = False
         last_failed_action = None
-        while (
-            self._dispatched_position < len(self._plan.actions)
-            and self._status != "failure"
-        ):
+        while self._dispatched_position < len(self._plan.actions) and self._status != "failure":
             current_action = self._plan.actions[self._dispatched_position]
             action_result = self._dispatch_cb(current_action)
             if not action_result:
@@ -55,10 +52,7 @@ class SequentialPlanDispatcher:
                 replanned = False
                 if last_failed_action == current_action:
                     last_failed_action = None
-                if (
-                    self._plan.actions[self._dispatched_position].action.name
-                    == "!replan"
-                ):
+                if self._plan.actions[self._dispatched_position].action.name == "!replan":
                     self._dispatched_position = 0
                 else:
                     self._dispatched_position += 1
