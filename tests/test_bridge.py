@@ -13,13 +13,12 @@
 # limitations under the License.
 
 from typing import Callable, Dict
-from unified_planning.shortcuts import Equals, Not, OneshotPlanner
-from up_bridge.bridge import Bridge
-
-from up_bridge.components import ActionDefinition, UserTypeDefinition
 
 import pytest
+from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
+from up_bridge.bridge import Bridge
+from up_bridge.components import ActionDefinition, UserTypeDefinition
 
 ############################################################################################################
 ######################################### ESSENTIALS #######################################################
@@ -220,9 +219,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action(
-            "CapturePhoto", area=Area, l=Location
-        )
+        capture_photo, (a, l) = bridge.create_action("CapturePhoto", area=Area, l=Location)
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
         capture_photo.add_precondition(fluents["f_is_location_surveyed"](a, l))
         capture_photo.add_precondition(fluents["f_robot_at"](l))
@@ -242,9 +239,7 @@ class ProblemDeclaration(Application):
 
     def create_actions_from_functions(self, bridge: Bridge, fluents):
         """Input type as class functions."""
-        move, (a, l_from, l_to) = bridge.create_action_from_function(
-            function=Actions.move
-        )
+        move, (a, l_from, l_to) = bridge.create_action_from_function(function=Actions.move)
         move.add_precondition(fluents["f_is_surveyed"](a))
         move.add_precondition(fluents["f_is_location_surveyed"](a, l_to))
         move.add_precondition(Not(Equals(l_from, l_to)))
@@ -253,9 +248,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action_from_function(
-            function=Actions.capture_photo
-        )
+        capture_photo, (a, l) = bridge.create_action_from_function(function=Actions.capture_photo)
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
         capture_photo.add_precondition(fluents["f_is_location_surveyed"](a, l))
         capture_photo.add_precondition(fluents["f_robot_at"](l))
@@ -264,24 +257,18 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action_from_function(
-            function=Actions.survey
-        )
+        survey, a = bridge.create_action_from_function(function=Actions.survey)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action_from_function(
-            function=Actions.gather_info
-        )
+        gather_info, (a, l) = bridge.create_action_from_function(function=Actions.gather_info)
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
         gather_info.add_precondition(fluents["f_is_within_area"](a, l))
         gather_info.add_effect(fluents["f_is_location_surveyed"](a, l), True)
 
     def create_actions_from_methods(self, bridge: Bridge, fluents):
         """Input types as class methods."""
-        move, (a, l_from, l_to) = bridge.create_action_from_method(
-            method=self.move.__call__
-        )
+        move, (a, l_from, l_to) = bridge.create_action_from_method(method=self.move.__call__)
         move.add_precondition(fluents["f_is_surveyed"](a))
         move.add_precondition(fluents["f_is_location_surveyed"](a, l_to))
         move.add_precondition(Not(Equals(l_from, l_to)))
@@ -301,9 +288,7 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action_from_function(
-            name="Survey", function=self.survey.__call__
-        )
+        survey, a = bridge.create_action_from_function(name="Survey", function=self.survey.__call__)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
@@ -342,7 +327,9 @@ class ProblemDeclaration(Application):
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action("GatherInfo", signature={"area": Area, "l": Location})
+        gather_info, (a, l) = bridge.create_action(
+            "GatherInfo", signature={"area": Area, "l": Location}
+        )
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
         gather_info.add_precondition(fluents["f_is_within_area"](a, l))
         gather_info.add_effect(fluents["f_is_location_surveyed"](a, l), True)
@@ -369,7 +356,9 @@ class ProblemDeclaration(Application):
         bridge: Bridge,
         dec_fluents: Callable[[Bridge], Dict[str, Callable[..., object]]],
         dec_objects: Callable[[Bridge], Dict[str, Callable[..., object]]],
-        dec_actions: Callable[[Bridge, Dict[str, Callable[..., object]]], Dict[str, Callable[..., object]]],
+        dec_actions: Callable[
+            [Bridge, Dict[str, Callable[..., object]]], Dict[str, Callable[..., object]]
+        ],
     ):
 
         fluents = dec_fluents(bridge)
@@ -383,21 +372,11 @@ class ProblemDeclaration(Application):
         problem.set_initial_value(fluents["f_robot_at"](objects["o_l3"]), False)
         problem.set_initial_value(fluents["f_robot_at"](objects["o_l4"]), False)
 
-        problem.set_initial_value(
-            fluents["f_verified_station_at"](objects["o_home"]), True
-        )
-        problem.set_initial_value(
-            fluents["f_verified_station_at"](objects["o_l1"]), False
-        )
-        problem.set_initial_value(
-            fluents["f_verified_station_at"](objects["o_l2"]), False
-        )
-        problem.set_initial_value(
-            fluents["f_verified_station_at"](objects["o_l3"]), False
-        )
-        problem.set_initial_value(
-            fluents["f_verified_station_at"](objects["o_l4"]), False
-        )
+        problem.set_initial_value(fluents["f_verified_station_at"](objects["o_home"]), True)
+        problem.set_initial_value(fluents["f_verified_station_at"](objects["o_l1"]), False)
+        problem.set_initial_value(fluents["f_verified_station_at"](objects["o_l2"]), False)
+        problem.set_initial_value(fluents["f_verified_station_at"](objects["o_l3"]), False)
+        problem.set_initial_value(fluents["f_verified_station_at"](objects["o_l4"]), False)
 
         problem.set_initial_value(fluents["f_is_surveyed"](objects["o_area"]), False)
         problem.set_initial_value(
@@ -433,18 +412,10 @@ class ProblemDeclaration(Application):
         )
 
         problem.add_goal(fluents["f_is_surveyed"](objects["o_area"]))
-        problem.add_goal(
-            fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l1"])
-        )
-        problem.add_goal(
-            fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l2"])
-        )
-        problem.add_goal(
-            fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l3"])
-        )
-        problem.add_goal(
-            fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l4"])
-        )
+        problem.add_goal(fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l1"]))
+        problem.add_goal(fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l2"]))
+        problem.add_goal(fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l3"]))
+        problem.add_goal(fluents["f_is_location_surveyed"](objects["o_area"], objects["o_l4"]))
         problem.add_goal(fluents["f_verified_station_at"](objects["o_l1"]))
         problem.add_goal(fluents["f_verified_station_at"](objects["o_l2"]))
         problem.add_goal(fluents["f_verified_station_at"](objects["o_l3"]))

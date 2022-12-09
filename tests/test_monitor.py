@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import unittest
-from up_bridge.plexmo.monitor import SequentialPlanMonitor
-from unified_planning.test.examples import get_example_problems
-from unified_planning.model import UPCOWState
+
 from unified_planning.engines import SequentialSimulator
+from unified_planning.model import UPCOWState
+from unified_planning.test.examples import get_example_problems
+
+from up_bridge.plexmo.monitor import SequentialPlanMonitor
 
 
 class TestSequentialMonitor(unittest.TestCase):
