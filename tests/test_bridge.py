@@ -184,7 +184,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action(
+        capture_photo, [a, l] = bridge.create_action(
             "CapturePhoto", callable=self.capture_photo, area=Area, l=Location
         )
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
@@ -195,11 +195,11 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action("Survey", callable=self.survey, area=Area)
+        survey, [a] = bridge.create_action("Survey", callable=self.survey, area=Area)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action(
+        gather_info, [a, l] = bridge.create_action(
             "GatherInfo", callable=self.gather_info, area=Area, l=Location
         )
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
@@ -219,7 +219,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action("CapturePhoto", area=Area, l=Location)
+        capture_photo, [a, l] = bridge.create_action("CapturePhoto", area=Area, l=Location)
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
         capture_photo.add_precondition(fluents["f_is_location_surveyed"](a, l))
         capture_photo.add_precondition(fluents["f_robot_at"](l))
@@ -228,11 +228,11 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action("Survey", area=Area)
+        survey, [a] = bridge.create_action("Survey", area=Area)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action("GatherInfo", area=Area, l=Location)
+        gather_info, [a, l] = bridge.create_action("GatherInfo", area=Area, l=Location)
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
         gather_info.add_precondition(fluents["f_is_within_area"](a, l))
         gather_info.add_effect(fluents["f_is_location_surveyed"](a, l), True)
@@ -248,7 +248,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action_from_function(function=Actions.capture_photo)
+        capture_photo, [a, l] = bridge.create_action_from_function(function=Actions.capture_photo)
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
         capture_photo.add_precondition(fluents["f_is_location_surveyed"](a, l))
         capture_photo.add_precondition(fluents["f_robot_at"](l))
@@ -257,11 +257,11 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action_from_function(function=Actions.survey)
+        survey, [a] = bridge.create_action_from_function(function=Actions.survey)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action_from_function(function=Actions.gather_info)
+        gather_info, [a, l] = bridge.create_action_from_function(function=Actions.gather_info)
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
         gather_info.add_precondition(fluents["f_is_within_area"](a, l))
         gather_info.add_effect(fluents["f_is_location_surveyed"](a, l), True)
@@ -277,7 +277,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action_from_function(
+        capture_photo, [a, l] = bridge.create_action_from_function(
             name="CapturePhoto", function=self.capture_photo.__call__
         )
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
@@ -288,11 +288,13 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action_from_function(name="Survey", function=self.survey.__call__)
+        survey, [a] = bridge.create_action_from_function(
+            name="Survey", function=self.survey.__call__
+        )
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action_from_function(
+        gather_info, [a, l] = bridge.create_action_from_function(
             name="GatherInfo", function=self.gather_info.__call__
         )
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
@@ -312,7 +314,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_from), False)
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
-        capture_photo, (a, l) = bridge.create_action(
+        capture_photo, [a, l] = bridge.create_action(
             "CapturePhoto", signature={"area": Area, "l": Location}
         )
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
@@ -323,11 +325,11 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, a = bridge.create_action("Survey", signature={"area": Area})
+        survey, [a] = bridge.create_action("Survey", signature={"area": Area})
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
-        gather_info, (a, l) = bridge.create_action(
+        gather_info, [a, l] = bridge.create_action(
             "GatherInfo", signature={"area": Area, "l": Location}
         )
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
