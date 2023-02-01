@@ -182,7 +182,7 @@ class VerifyStationProblem(Application):
         capture_photo.add_effect(f_verified_station_at(l), True)
         capture_photo.add_effect(f_robot_at(l), True)  # Since using instantaneous actions
 
-        survey, a = self.bridge.create_action("Survey", callable=self.survey, area=Area)
+        survey, [a] = self.bridge.create_action("Survey", callable=self.survey, area=Area)
         survey.add_precondition(Not(f_is_surveyed(a)))
         survey.add_effect(f_is_surveyed(a), True)
 
