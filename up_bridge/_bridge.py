@@ -317,13 +317,9 @@ class Bridge:
 
         executable_graph = nx.DiGraph()
         executable_graph.add_nodes_from(graph.nodes)
-        executable_graph.add_edges_from(graph.edges)
 
         for node in graph.nodes():
-            if node in ["start", "end"]:
-                continue  # TODO:
-            if node not in self._api_actions.keys():
-                raise ValueError(f"Action {node} not defined in API!")
-            executable_graph.nodes[node]["executable"] = self._api_actions[str(node)]
-
-        return executable_graph
+            if isinstance(node, ActionInstance):
+                executable_graph.add_node(node, action=node.action.name)
+            else:
+                executable_graph.add_node(node, action=None)
