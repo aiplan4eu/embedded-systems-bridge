@@ -1,11 +1,9 @@
 """Module to convert UP Plan to Dependency Graph and execute it."""
 from typing import Union
+
 import networkx as nx
-from unified_planning.engines.results import PlanGenerationResultStatus
-import unified_planning as up
 from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.plans.time_triggered_plan import TimeTriggeredPlan
-import asyncio
 
 
 def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:

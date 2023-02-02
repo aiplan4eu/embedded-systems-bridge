@@ -18,12 +18,13 @@ import typing
 from collections import OrderedDict
 from enum import Enum
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
-import networkx as nx
 
+import networkx as nx
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.model import Fluent, InstantaneousAction, Object, Parameter, Problem, Type
 from unified_planning.plans import ActionInstance, SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
+
 from up_bridge.components.graph import plan_to_dependency_graph
 
 

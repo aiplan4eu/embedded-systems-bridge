@@ -4,8 +4,9 @@ import unified_planning as up
 from networkx.drawing.nx_agraph import graphviz_layout
 from unified_planning.shortcuts import *
 
-from up_bridge.components.graph import plan_to_dependency_graph
 from up_bridge.bridge import Bridge
+from up_bridge.components.graph import plan_to_dependency_graph
+
 
 #################### 1. Define the domain ####################
 class Robot:

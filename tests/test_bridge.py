@@ -288,7 +288,9 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, [a] = bridge.create_action_from_function(name="Survey", function=self.survey.__call__)
+        survey, [a] = bridge.create_action_from_function(
+            name="Survey", function=self.survey.__call__
+        )
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
