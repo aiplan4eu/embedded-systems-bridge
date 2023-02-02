@@ -313,17 +313,16 @@ class Bridge:
 
     def get_executable_graph(self, plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:
         """Get executable graph from plan."""
-        graph = plan_to_dependency_graph(plan)
+        executable_graph = plan_to_dependency_graph(plan)
 
-        executable_graph = nx.DiGraph()
-        executable_graph.add_nodes_from(graph.nodes)
-        executable_graph.add_edges_from(graph.edges)
-
-        for node in graph.nodes():
-            if node in ["start", "end"]:
-                continue  # TODO:
-            if node not in self._api_actions.keys():
-                raise ValueError(f"Action {node} not defined in API!")
-            executable_graph.nodes[node]["executable"] = self._api_actions[str(node)]
+        for node in executable_graph.nodes(data=True):
+            node_id = node[0]
+            action_instance = node[1]["action"]
+            action_parameters = node[1]["parameters"]
+            if action_instance in ["start", "end"]:
+                continue  # TODO: Handle start and end nodes.
+            if action_instance not in self._api_actions.keys():
+                raise ValueError(f"Action {action_instance} not defined in API!")
+            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
 
         return executable_graph

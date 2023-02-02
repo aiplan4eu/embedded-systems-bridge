@@ -102,18 +102,13 @@ def main():
         print("*** End of result ***")
         plan = result.plan
 
-    results = []
-    for action in plan.actions:
-        (executor, parameters) = bridge.get_executable_action(action)
-        execute_action = executor()
-        result = execute_action(*parameters)
-
-        results.append(result)
-
-    # TODO: Replace the previous with following
+    # TODO: Move to Bridge
     graph_executor = bridge.get_executable_graph(plan)
-    for node in graph_executor.nodes:
-        print(node)
+    for node in graph_executor.nodes(data=True):
+        if node[0] in ["start", "end"]:
+            continue
+        parameters = node[1]["parameters"]
+        result = node[1]["executor"]()(*parameters)
 
     # draw graph
     plt.figure(figsize=(10, 10))

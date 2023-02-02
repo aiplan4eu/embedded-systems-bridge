@@ -21,15 +21,15 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
     """Convert UP Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     edge = "start"
+    dependency_graph.add_node(edge, action="start", parameters=())
     for action in plan.actions:
         child = action.action.name
-        dependency_graph.add_node(child)
-        dependency_graph.add_edge(edge, child)
-        edge = child
-        # for precondition in action.preconditions:
-        #     dependency_graph.add_edge(precondition, action.name)
+        child_name = f"{child}{action.actual_parameters}"
+        dependency_graph.add_node(child_name, action=child, parameters=action.actual_parameters)
+        dependency_graph.add_edge(edge, child_name)
+        edge = child_name
 
-    dependency_graph.add_node("end")
+    dependency_graph.add_node("end", action="end", parameters=())
     dependency_graph.add_edge(edge, "end")
     return dependency_graph
 
