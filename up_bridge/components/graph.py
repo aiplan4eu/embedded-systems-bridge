@@ -35,18 +35,17 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
 def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGraph:
     """Convert UP Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    dependency_graph.add_node("start")
     edge = "start"
+    dependency_graph.add_node(edge, action="start", parameters=())
+    # TODO: Add timing information
+    for (start, action, duration) in plan.timed_actions:
+        child = action.action.name
+        duration = float(duration.numerator) / float(duration.denominator)
+        child_name = f"{child}{action.actual_parameters}({duration}s)"
+        dependency_graph.add_node(child_name, action=child, parameters=action.actual_parameters)
+        dependency_graph.add_edge(edge, child_name, weight=duration)
+        edge = child_name
 
-    # TODO: Add duration to the graph
-    for _, action, _ in plan.timed_actions:
-        child = f"{action.action.name}_{action.actual_parameters}"
-        dependency_graph.add_node(child)
-
-        # Add edges with parent actions
-        dependency_graph.add_edge(edge, child)
-        edge = child
-
-    dependency_graph.add_node("end")
+    dependency_graph.add_node("end", action="end", parameters=())
     dependency_graph.add_edge(edge, "end")
     return dependency_graph

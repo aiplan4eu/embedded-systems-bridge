@@ -21,7 +21,15 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 from unified_planning.engines import OptimalityGuarantee
-from unified_planning.model import Fluent, InstantaneousAction, Object, Parameter, Problem, Type
+from unified_planning.model import (
+    Fluent,
+    InstantaneousAction,
+    Object,
+    Parameter,
+    Problem,
+    Type,
+    DurativeAction,
+)
 from unified_planning.plans import ActionInstance, SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
@@ -184,17 +192,32 @@ class Bridge:
          preconditions and effects in the UP domain.
         """
         assert name not in self._actions.keys(), f"Action {name} already exists!"
-        action = InstantaneousAction(
-            name,
-            # Use signature's types, without its return type.
-            OrderedDict(
-                (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (
-                    dict(signature, **kwargs) if signature else kwargs
-                ).items()
-                if parameter_name != "return"
-            ),
-        )
+        if kwargs["duration"]:
+            # TODO: Durative actions
+            action = DurativeAction(
+                name,
+                # Use signature's types, without its return type.
+                OrderedDict(
+                    (parameter_name, self.get_type(api_type))
+                    for parameter_name, api_type in (
+                        dict(signature, **kwargs) if signature else kwargs
+                    ).items()
+                    if parameter_name not in ["return", "duration"]
+                ),
+            )
+            action.set_fixed_duration(kwargs["duration"])
+        else:
+            action = InstantaneousAction(
+                name,
+                # Use signature's types, without its return type.
+                OrderedDict(
+                    (parameter_name, self.get_type(api_type))
+                    for parameter_name, api_type in (
+                        dict(signature, **kwargs) if signature else kwargs
+                    ).items()
+                    if parameter_name != "return"
+                ),
+            )
         self._actions[name] = action
         if callable:
             self._api_actions[name] = callable
