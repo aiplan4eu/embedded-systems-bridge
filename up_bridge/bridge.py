@@ -192,7 +192,7 @@ class Bridge:
          preconditions and effects in the UP domain.
         """
         assert name not in self._actions.keys(), f"Action {name} already exists!"
-        if kwargs["duration"]:
+        if kwargs.get("duration", None):
             # TODO: Durative actions
             action = DurativeAction(
                 name,
@@ -348,5 +348,14 @@ class Bridge:
             if action_instance not in self._api_actions.keys():
                 raise ValueError(f"Action {action_instance} not defined in API!")
             executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
+
+            # Parameters
+            parameters = []
+            for param in action_parameters:
+                param = str(param)
+                if param not in self._api_objects:
+                    raise ValueError(f"Object {param} not defined in API!")
+                parameters.append(self._api_objects[str(param)])
+            executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
 
         return executable_graph
