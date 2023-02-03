@@ -192,32 +192,21 @@ class Bridge:
          preconditions and effects in the UP domain.
         """
         assert name not in self._actions.keys(), f"Action {name} already exists!"
-        if kwargs.get("duration", None):
-            # TODO: Durative actions
-            action = DurativeAction(
-                name,
-                # Use signature's types, without its return type.
-                OrderedDict(
-                    (parameter_name, self.get_type(api_type))
-                    for parameter_name, api_type in (
-                        dict(signature, **kwargs) if signature else kwargs
-                    ).items()
-                    if parameter_name not in ["return", "duration"]
-                ),
-            )
-            action.set_fixed_duration(kwargs["duration"])
+        # Combine signature with kwargs.
+        if signature:
+            kwargs = dict(signature, **kwargs)
+        duration = kwargs.get("duration")
+        # Use signature's types, without its return type and the duration parameter.
+        parameters = OrderedDict(
+            (parameter_name, self.get_type(api_type))
+            for parameter_name, api_type in kwargs.items()
+            if parameter_name not in {"return", "duration"}
+        )
+        if duration is not None:
+            action = DurativeAction(name, parameters)
+            action.set_fixed_duration(duration)
         else:
-            action = InstantaneousAction(
-                name,
-                # Use signature's types, without its return type.
-                OrderedDict(
-                    (parameter_name, self.get_type(api_type))
-                    for parameter_name, api_type in (
-                        dict(signature, **kwargs) if signature else kwargs
-                    ).items()
-                    if parameter_name != "return"
-                ),
-            )
+            action = InstantaneousAction(name, parameters)
         self._actions[name] = action
         if callable:
             self._api_actions[name] = callable
