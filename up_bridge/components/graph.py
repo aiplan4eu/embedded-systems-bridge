@@ -4,7 +4,6 @@ from typing import Union
 import networkx as nx
 from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.plans.time_triggered_plan import TimeTriggeredPlan
-from unified_planning.shortcuts import Fraction
 
 
 def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:
@@ -36,17 +35,32 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
 def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGraph:
     """Convert UP Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    edge = "start"
-    dependency_graph.add_node(edge, action="start", parameters=())
-    # TODO: Add timing information
-    for (start, action, duration) in plan.timed_actions:
+    parent = "start"
+    dependency_graph.add_node(parent, action="start", parameters=())
+
+    next_parents = set()
+    for i, (start, action, duration) in enumerate(plan.timed_actions):
         child = action.action.name
         duration = float(duration.numerator) / float(duration.denominator)
         child_name = f"{child}{action.actual_parameters}({duration}s)"
         dependency_graph.add_node(child_name, action=child, parameters=action.actual_parameters)
-        dependency_graph.add_edge(edge, child_name, weight=duration)
-        edge = child_name
+        dependency_graph.add_edge(parent, child_name, weight=duration)
+        if i + 1 < len(plan.timed_actions):
+            next_start, next_action, next_duration = plan.timed_actions[i + 1]
+            next_duration = float(next_duration.numerator) / float(next_duration.denominator)
+            if start != next_start:
+                parent = child_name
+                for next_parent in next_parents:
+                    next_parent_name = f"{next_parent[1].action.name}{next_parent[1].actual_parameters}({next_parent[2]}s)"
+                    next_child_name = f"{next_action.action.name}{next_action.actual_parameters}({next_duration}s)"
+                    dependency_graph.add_edge(
+                        next_parent_name, next_child_name, weight=next_duration
+                    )
+                next_parents = set()
+            else:
+                next_parents.add((start, action, duration))
 
-    dependency_graph.add_node("end", action="end", parameters=())
-    dependency_graph.add_edge(edge, "end")
+    # FIXME: End Node is conflicting with parent node
+    # dependency_graph.add_node("end", action="end", parameters=())
+    # dependency_graph.add_edge(parent, "end")
     return dependency_graph
