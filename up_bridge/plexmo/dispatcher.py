@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import networkx as nx
 from unified_planning.plans.sequential_plan import SequentialPlan
 
 
@@ -76,3 +77,84 @@ class SequentialPlanDispatcher:
     def set_replan_callback(self, callback):
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
+
+
+class PlanDispatcher:
+    """Dispatches the actions of the executable graph."""
+
+    def __init__(self):
+        self._graph = None
+        self._status = "idle"
+        self._dispatch_cb = self._default_dispatch_cb
+        self._replan_cb = None
+
+    def execute_plan(self, graph: nx.DiGraph):
+        self._status = "executing"
+        self._graph = graph
+        self._dispatched_position = 0
+        replanned = False
+        last_failed_action = None
+        for node in self._graph.nodes(data=True):
+            if node[0] in ["start", "end"]:
+                continue  # skip start and end node
+            successors = list(self._graph.successors(node[0]))
+            if len(successors) > 1 and self._status != "failure":  # Assume as single action
+                # TODO: Handle multiple successors
+                print(f"Node {node[0]} has {len(successors)} successors: {successors}. Exiting!")
+                self._status = "failure"
+                return False
+            else:
+                current_action = node
+                action_result = self._dispatch_cb(current_action)
+                if not action_result:
+                    # TODO Move error handling into separate method
+                    if last_failed_action != current_action:
+                        last_failed_action = current_action
+                        if not replanned and self._replan_cb:
+                            # replan once if an action fails for each action
+                            # TODO make replannig more flexible (dependent on the action) and generic
+                            print("Action failed: Replanning once!")
+                            new_plan = self._replan_cb()
+                            if new_plan is not None:
+                                self._graph = new_plan
+                                self._dispatched_position = 0
+                                replanned = True
+                                continue
+                    self._status = "failure"
+                else:
+                    replanned = False
+                    if last_failed_action == current_action:
+                        last_failed_action = None
+                    # TODO:Check the below condition
+                    if node[0] == "!replan":
+                        self._dispatched_position = 0
+                    else:
+                        self._dispatched_position += 1
+
+        if self._status != "failure":
+            self._status = "finished"
+            return True
+        else:
+            return False
+
+    def set_dispatch_callback(self, callback):
+        """Set callback function for executing actions.
+        For now, that function is expected to be blocking and
+        to return True if the action has been executed successfully
+        and False in case of failure.
+        """
+        self._dispatch_cb = callback
+
+    def status(self) -> str:
+        return self._status
+
+    def set_replan_callback(self, callback):
+        """Set callback function that triggers replanning"""
+        self._replan_cb = callback
+
+    def _default_dispatch_cb(self, action):
+        # TODO Add condition evaluations
+        parameters = action[1]["parameters"]
+        result = action[1]["executor"]()(*parameters)
+
+        return result

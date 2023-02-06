@@ -19,7 +19,7 @@ from networkx.drawing.nx_agraph import graphviz_layout
 from unified_planning.shortcuts import *
 
 from up_bridge.bridge import Bridge
-from up_bridge.executor import Executor
+from up_bridge.plexmo import PlanDispatcher
 
 #################### 1. Define the domain ####################
 class Robot:
@@ -49,6 +49,8 @@ class Move:
         self.l_from = str(args[0])
         self.l_to = str(args[1])
         print(f"Moving from {self.l_from} to {self.l_to}")
+
+        return True
 
     def __repr__(self) -> str:
         return "Move"
@@ -107,7 +109,7 @@ def main():
     """Main function"""
     up.shortcuts.get_env().credits_stream = None
     bridge, problem = define_problem()
-    executor = Executor()
+    dispatcher = PlanDispatcher()
 
     with OneshotPlanner(name="pyperplan") as planner:
         result = planner.solve(problem)
@@ -118,7 +120,7 @@ def main():
         plan = result.plan
 
     graph_executor = bridge.get_executable_graph(plan)
-    executor.execute(graph_executor)
+    dispatcher.execute_plan(graph_executor)
 
     # draw graph
     plt.figure(figsize=(10, 10))

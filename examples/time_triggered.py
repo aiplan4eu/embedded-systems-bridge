@@ -24,7 +24,7 @@ from unified_planning.model import EndTiming, StartTiming
 from unified_planning.shortcuts import *
 
 from up_bridge.bridge import Bridge
-from up_bridge.executor import Executor
+from up_bridge.plexmo import PlanDispatcher
 
 #################### 1. Define the domain ####################
 class Match:
@@ -44,6 +44,7 @@ class LightMatch:
     def __call__(self, m: Match):
         print(f"Lighting match {m}")
         time.sleep(5)
+        return True
 
 
 class MendFuse:
@@ -53,6 +54,7 @@ class MendFuse:
     def __call__(self, f: Fuse):
         print(f"Mending fuse {f}")
         time.sleep(3)
+        return True
 
 
 def handsfree_fun():
@@ -127,7 +129,7 @@ def main():
     """Main function"""
     up.shortcuts.get_env().credits_stream = None
     bridge, problem = define_problem()
-    executor = Executor()
+    dispatcher = PlanDispatcher()
 
     with OneshotPlanner(name="aries") as planner:
         result = planner.solve(problem)
@@ -138,7 +140,7 @@ def main():
         plan = result.plan
 
     graph_executor = bridge.get_executable_graph(plan)
-    executor.execute(graph_executor)
+    dispatcher.execute_plan(graph_executor)
 
     # draw graph
     plt.figure(figsize=(10, 10))
