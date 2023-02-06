@@ -20,6 +20,8 @@ classifiers = [
 dependencies = [
   "unified-planning",
   "networkx",
+  "matplotlib",
+  "pygraphviz"
 ]
 description = "General functionalities for using unified-planning in applications"
 keywords = ["unified-planning", "unified-planning-bridge"]
@@ -84,8 +86,8 @@ disable = [
   "duplicate-code",
   "fixme",
   "too-few-public-methods",
-] 
-extension-pkg-whitelist = [] # "grpc"    
+]
+extension-pkg-whitelist = [] # "grpc"
 jobs = 0 # 0 for Auto-detect
 
 # List of plugins (as comma separated values of python module names) to load,
