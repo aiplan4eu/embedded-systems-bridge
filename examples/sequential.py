@@ -5,8 +5,7 @@ from networkx.drawing.nx_agraph import graphviz_layout
 from unified_planning.shortcuts import *
 
 from up_bridge.bridge import Bridge
-from up_bridge.components.graph import plan_to_dependency_graph
-
+from up_bridge.executor import Executor
 
 #################### 1. Define the domain ####################
 class Robot:
@@ -94,6 +93,7 @@ def main():
     """Main function"""
     up.shortcuts.get_env().credits_stream = None
     bridge, problem = define_problem()
+    executor = Executor()
 
     with OneshotPlanner(name="pyperplan") as planner:
         result = planner.solve(problem)
@@ -103,13 +103,8 @@ def main():
         print("*** End of result ***")
         plan = result.plan
 
-    # TODO: Move to Bridge
     graph_executor = bridge.get_executable_graph(plan)
-    for node in graph_executor.nodes(data=True):
-        if node[0] in ["start", "end"]:
-            continue
-        parameters = node[1]["parameters"]
-        result = node[1]["executor"]()(*parameters)
+    executor.execute(graph_executor)
 
     # draw graph
     plt.figure(figsize=(10, 10))
