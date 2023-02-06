@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from up_bridge.plexmo.dispatcher import SequentialPlanDispatcher
+from up_bridge.plexmo.dispatcher import SequentialPlanDispatcher, PlanDispatcher
 from up_bridge.plexmo.monitor import SequentialPlanMonitor
 
 __all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor"]

@@ -11,7 +11,7 @@
 
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=61.0.0", "setuptools-scm", "pip>=20.3.1"]
+requires = ["setuptools>=61.0.0", "setuptools-scm", "pip>=22.3"]
 
 [project]
 classifiers = [
@@ -19,14 +19,17 @@ classifiers = [
 ]
 dependencies = [
   "unified-planning",
+  "networkx",
+  "matplotlib",
+  "pygraphviz"
 ]
 description = "General functionalities for using unified-planning in applications"
-dynamic = ["version"]
 keywords = ["unified-planning", "unified-planning-bridge"]
 license = {text = "Apache-2.0 License"}
 name = "up_bridge"
 readme = "README.md"
 requires-python = ">=3.8"
+version = "0.0.5"
 
 [project.optional-dependencies]
 dev = ["black", "pylint", "pytest", "pre-commit"]

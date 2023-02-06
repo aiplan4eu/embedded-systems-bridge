@@ -1,4 +1,5 @@
-# Copyright 2022 Alexander Sung, DFKI
+# Copyright 2022, 2023 DFKI GmbH
+# Copyright 2023 LAAS-CNRS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +12,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Authors:
+# - Alexander Sung, DFKI
+# - Sebastian Stock, DFKI
+# - Selvakumar H S, LAAS-CNRS
+
 
 import itertools
 import sys
 import typing
 from collections import OrderedDict
 from enum import Enum
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
+import networkx as nx
 from unified_planning.engines import OptimalityGuarantee
-from unified_planning.model import Fluent, InstantaneousAction, Object, Parameter, Problem, Type
-from unified_planning.plans import ActionInstance
+from unified_planning.model import (
+    Fluent,
+    InstantaneousAction,
+    Object,
+    Parameter,
+    Problem,
+    Type,
+    DurativeAction,
+)
+from unified_planning.plans import ActionInstance, SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
+
+from up_bridge.components.graph import plan_to_dependency_graph
 
 
 class Bridge:
@@ -181,17 +199,21 @@ class Bridge:
          preconditions and effects in the UP domain.
         """
         assert name not in self._actions.keys(), f"Action {name} already exists!"
-        action = InstantaneousAction(
-            name,
-            # Use signature's types, without its return type.
-            OrderedDict(
-                (parameter_name, self.get_type(api_type))
-                for parameter_name, api_type in (
-                    dict(signature, **kwargs) if signature else kwargs
-                ).items()
-                if parameter_name != "return"
-            ),
+        # Combine signature with kwargs.
+        if signature:
+            kwargs = dict(signature, **kwargs)
+        duration = kwargs.get("duration")
+        # Use signature's types, without its return type and the duration parameter.
+        parameters = OrderedDict(
+            (parameter_name, self.get_type(api_type))
+            for parameter_name, api_type in kwargs.items()
+            if parameter_name not in {"return", "duration"}
         )
+        if duration is not None:
+            action = DurativeAction(name, parameters)
+            action.set_fixed_duration(duration)
+        else:
+            action = InstantaneousAction(name, parameters)
         self._actions[name] = action
         if callable:
             self._api_actions[name] = callable
@@ -308,3 +330,28 @@ class Bridge:
             optimality_guarantee=OptimalityGuarantee.SOLVED_OPTIMALLY,
         ).solve(problem)
         return result.plan.actions if result.plan else None
+
+    def get_executable_graph(self, plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:
+        """Get executable graph from plan."""
+        executable_graph = plan_to_dependency_graph(plan)
+
+        for node in executable_graph.nodes(data=True):
+            node_id = node[0]
+            action_instance = node[1]["action"]
+            action_parameters = node[1]["parameters"]
+            if action_instance in ["start", "end"]:
+                continue  # TODO: Handle start and end nodes.
+            if action_instance not in self._api_actions.keys():
+                raise ValueError(f"Action {action_instance} not defined in API!")
+            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
+
+            # Parameters
+            parameters = []
+            for param in action_parameters:
+                param = str(param)
+                if param not in self._api_objects:
+                    raise ValueError(f"Object {param} not defined in API!")
+                parameters.append(self._api_objects[str(param)])
+            executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
+
+        return executable_graph
