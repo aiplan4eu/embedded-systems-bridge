@@ -17,7 +17,7 @@
 # - Alexander Sung, DFKI
 # - Sebastian Stock, DFKI
 # - Selvakumar H S, LAAS-CNRS
-
+"""Bridge between application and planning domains"""
 
 import itertools
 import sys
@@ -29,13 +29,13 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 import networkx as nx
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.model import (
+    DurativeAction,
     Fluent,
     InstantaneousAction,
     Object,
     Parameter,
     Problem,
     Type,
-    DurativeAction,
 )
 from unified_planning.plans import ActionInstance, SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
@@ -63,6 +63,7 @@ class Bridge:
 
     @property
     def objects(self) -> Dict[str, Object]:
+        """Return all UP objects."""
         return self._objects
 
     def create_types(self, api_types: Iterable[type]) -> None:
@@ -109,7 +110,7 @@ class Bridge:
             assert isinstance(api_type, type), f"{api_type} is not a type!"
             # If defining class of function is a subclass of any class for which a UP representation
             #  has been created, add it as first parameter of signature.
-            if any(issubclass(api_type, check_api_type) for check_api_type in self._types.keys()):
+            if any(issubclass(api_type, check_api_type) for check_api_type in self._types):
                 signature[function.__qualname__.rsplit(".", maxsplit=1)[0]] = api_type
         for parameter_name, api_type in function.__annotations__.items():
             signature[parameter_name] = api_type
@@ -120,7 +121,7 @@ class Bridge:
         name: str,
         result_api_type: Optional[type] = None,
         signature: Optional[Dict[str, type]] = None,
-        callable: Optional[Callable[..., object]] = None,
+        _callable: Optional[Callable[..., object]] = None,
         **kwargs: type,
     ) -> Fluent:
         """
@@ -146,8 +147,8 @@ class Bridge:
                 if parameter_name != "return"
             ),
         )
-        if callable:
-            self._fluent_functions[name] = callable
+        if _callable:
+            self._fluent_functions[name] = _callable
             self.set_if_api_signature(name, dict(signature, **kwargs) if signature else kwargs)
         return self._fluents[name]
 
@@ -163,7 +164,7 @@ class Bridge:
         """
         name, signature = self.get_name_and_signature(function)
         return self.create_fluent(
-            name, signature=signature, callable=function if set_callable else None
+            name, signature=signature, _callable=function if set_callable else None
         )
 
     def set_fluent_functions(self, functions: Iterable[Callable[..., object]]) -> None:
@@ -176,7 +177,8 @@ class Bridge:
 
     def set_if_api_signature(self, name: str, signature: Dict[str, type]) -> None:
         """
-        Determine and store if any parameter in signature of function with name has a type in the application domain.
+        Determine and store if any parameter in signature of function with name
+        has a type in the application domain.
         """
         if any(
             not issubclass(parameter_type, Object)
@@ -189,7 +191,7 @@ class Bridge:
         self,
         name: str,
         signature: Optional[Dict[str, type]] = None,
-        callable: Optional[Callable[..., object]] = None,
+        _callable: Optional[Callable[..., object]] = None,
         **kwargs: type,
     ) -> Tuple[InstantaneousAction, List[Parameter]]:
         """
@@ -215,8 +217,8 @@ class Bridge:
         else:
             action = InstantaneousAction(name, parameters)
         self._actions[name] = action
-        if callable:
-            self._api_actions[name] = callable
+        if _callable:
+            self._api_actions[name] = _callable
         return action, action.parameters
 
     def create_action_from_function(
@@ -320,8 +322,9 @@ class Bridge:
                 )
                 problem.set_initial_value(fluent(*parameters), value)
 
+    @staticmethod
     def solve(
-        self, problem: Problem, planner_name: Optional[str] = None
+        problem: Problem, planner_name: Optional[str] = None
     ) -> Optional[List[ActionInstance]]:
         """Solve planning problem and return list of UP actions."""
         result = OneshotPlanner(

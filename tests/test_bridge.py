@@ -20,6 +20,7 @@ from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 from up_bridge.bridge import Bridge
 from up_bridge.components import ActionDefinition, UserTypeDefinition
 
+# pylint: disable=all
 ############################################################################################################
 ######################################### ESSENTIALS #######################################################
 ############################################################################################################
@@ -174,7 +175,7 @@ class ProblemDeclaration(Application):
     def create_action_kwargs(self, bridge: Bridge, fluents):
         """Actions with executable function."""
         move, (a, l_from, l_to) = bridge.create_action(
-            "Move", callable=self.move, area=Area, l_from=Location, l_to=Location
+            "Move", _callable=self.move, area=Area, l_from=Location, l_to=Location
         )
         move.add_precondition(fluents["f_is_surveyed"](a))
         move.add_precondition(fluents["f_is_location_surveyed"](a, l_to))
@@ -185,7 +186,7 @@ class ProblemDeclaration(Application):
         move.add_effect(fluents["f_robot_at"](l_to), True)
 
         capture_photo, (a, l) = bridge.create_action(
-            "CapturePhoto", callable=self.capture_photo, area=Area, l=Location
+            "CapturePhoto", _callable=self.capture_photo, area=Area, l=Location
         )
         capture_photo.add_precondition(fluents["f_is_surveyed"](a))
         capture_photo.add_precondition(fluents["f_is_location_surveyed"](a, l))
@@ -195,12 +196,12 @@ class ProblemDeclaration(Application):
             fluents["f_robot_at"](l), True
         )  # Since using instantaneous actions
 
-        survey, [a] = bridge.create_action("Survey", callable=self.survey, area=Area)
+        survey, [a] = bridge.create_action("Survey", _callable=self.survey, area=Area)
         survey.add_precondition(Not(fluents["f_is_surveyed"](a)))
         survey.add_effect(fluents["f_is_surveyed"](a), True)
 
         gather_info, (a, l) = bridge.create_action(
-            "GatherInfo", callable=self.gather_info, area=Area, l=Location
+            "GatherInfo", _callable=self.gather_info, area=Area, l=Location
         )
         gather_info.add_precondition(fluents["f_is_surveyed"](a))
         gather_info.add_precondition(fluents["f_is_within_area"](a, l))

@@ -17,7 +17,7 @@
 # - Sebastian Stock, DFKI
 # - Marc Vinci, DFKI
 # - Selvakumar H S, LAAS-CNRS
-
+"""Dispatcher for executing plans."""
 import networkx as nx
 from unified_planning.plans.sequential_plan import SequentialPlan
 
@@ -30,8 +30,10 @@ class SequentialPlanDispatcher:
         self._status = "idle"
         self._dispatch_cb = None
         self._replan_cb = None
+        self._dispatched_position = 0
 
     def execute_plan(self, plan: SequentialPlan):
+        """Execute the plan."""
         self._status = "executing"
         self._plan = plan
         self._dispatched_position = 0
@@ -66,8 +68,8 @@ class SequentialPlanDispatcher:
         if self._status != "failure":
             self._status = "finished"
             return True
-        else:
-            return False
+
+        return False
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.
@@ -78,6 +80,7 @@ class SequentialPlanDispatcher:
         self._dispatch_cb = callback
 
     def status(self) -> str:
+        """Return the current status of the dispatcher."""
         return self._status
 
     def set_replan_callback(self, callback):
@@ -93,8 +96,10 @@ class PlanDispatcher:
         self._status = "idle"
         self._dispatch_cb = self._default_dispatch_cb
         self._replan_cb = None
+        self._dispatched_position = 0
 
     def execute_plan(self, graph: nx.DiGraph):
+        """Execute the plan."""
         self._status = "executing"
         self._graph = graph
         self._dispatched_position = 0
@@ -109,39 +114,39 @@ class PlanDispatcher:
                 print(f"Node {node[0]} has {len(successors)} successors: {successors}. Exiting!")
                 self._status = "failure"
                 return False
+            current_action = node
+            action_result = self._dispatch_cb(current_action)
+            if not action_result:
+                # TODO Move error handling into separate method
+                if last_failed_action != current_action:
+                    last_failed_action = current_action
+                    if not replanned and self._replan_cb:
+                        # replan once if an action fails for each action
+                        # TODO make replannig more flexible
+                        # (dependent on the action) and generic
+                        print("Action failed: Replanning once!")
+                        new_plan = self._replan_cb()
+                        if new_plan is not None:
+                            self._graph = new_plan
+                            self._dispatched_position = 0
+                            replanned = True
+                            continue
+                self._status = "failure"
             else:
-                current_action = node
-                action_result = self._dispatch_cb(current_action)
-                if not action_result:
-                    # TODO Move error handling into separate method
-                    if last_failed_action != current_action:
-                        last_failed_action = current_action
-                        if not replanned and self._replan_cb:
-                            # replan once if an action fails for each action
-                            # TODO make replannig more flexible (dependent on the action) and generic
-                            print("Action failed: Replanning once!")
-                            new_plan = self._replan_cb()
-                            if new_plan is not None:
-                                self._graph = new_plan
-                                self._dispatched_position = 0
-                                replanned = True
-                                continue
-                    self._status = "failure"
+                replanned = False
+                if last_failed_action == current_action:
+                    last_failed_action = None
+                # TODO:Check the below condition
+                if node[0] == "!replan":
+                    self._dispatched_position = 0
                 else:
-                    replanned = False
-                    if last_failed_action == current_action:
-                        last_failed_action = None
-                    # TODO:Check the below condition
-                    if node[0] == "!replan":
-                        self._dispatched_position = 0
-                    else:
-                        self._dispatched_position += 1
+                    self._dispatched_position += 1
 
         if self._status != "failure":
             self._status = "finished"
             return True
-        else:
-            return False
+
+        return False
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.
@@ -152,13 +157,15 @@ class PlanDispatcher:
         self._dispatch_cb = callback
 
     def status(self) -> str:
+        """Return the current status of the dispatcher."""
         return self._status
 
     def set_replan_callback(self, callback):
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
 
-    def _default_dispatch_cb(self, action):
+    @staticmethod
+    def _default_dispatch_cb(action):
         # TODO Add condition evaluations
         parameters = action[1]["parameters"]
         result = action[1]["executor"]()(*parameters)

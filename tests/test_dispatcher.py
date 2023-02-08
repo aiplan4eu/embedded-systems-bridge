@@ -20,6 +20,8 @@ from unified_planning.test.examples import get_example_problems
 
 from up_bridge.plexmo.dispatcher import SequentialPlanDispatcher
 
+# pylint: disable=all
+
 
 def get_example_plan() -> SequentialPlan:
     example_problems = get_example_problems()

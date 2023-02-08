@@ -11,28 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Example for sequential plan execution."""
 import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
 from networkx.drawing.nx_agraph import graphviz_layout
-from unified_planning.shortcuts import *
+from unified_planning.shortcuts import OneshotPlanner
 
 from up_bridge.bridge import Bridge
 from up_bridge.plexmo import PlanDispatcher
 
+
 #################### 1. Define the domain ####################
 class Robot:
-    location = ""
+    """Robot class."""
 
-    def __init__(self, cls):
-        cls.location = "l1"
-
-    def move(self, l_to):
-        self.location = l_to
+    location = "l1"
 
 
 class Location:
+    """Location class."""
+
     def __init__(self, name):
         self.name = name
 
@@ -41,6 +40,8 @@ class Location:
 
 
 class Move:
+    """Move Action."""
+
     def __init__(self):
         self.l_from = ""
         self.l_to = ""
@@ -49,6 +50,7 @@ class Move:
         self.l_from = str(args[0])
         self.l_to = str(args[1])
         print(f"Moving from {self.l_from} to {self.l_to}")
+        Robot.location = self.l_to
 
         return True
 
@@ -57,10 +59,12 @@ class Move:
 
 
 def robot_at_fun(l: Location):
+    """Check if the robot is at a location."""
     return Robot().location == l
 
 
 def visited_fun(l: Location):
+    """Check if the location is visited."""
     return Robot().location == l
 
 
@@ -68,6 +72,7 @@ def visited_fun(l: Location):
 
 
 def define_problem():
+    """Define the problem."""
     bridge = Bridge()
 
     bridge.create_types([Location])
@@ -81,7 +86,7 @@ def define_problem():
     l4 = bridge.create_object("l4", Location("l4"))
 
     move, [l_from, l_to] = bridge.create_action(
-        "Move", callable=Move, l_from=Location, l_to=Location
+        "Move", _callable=Move, l_from=Location, l_to=Location
     )
     move.add_precondition(robot_at(l_from))
     move.add_effect(robot_at(l_from), False)

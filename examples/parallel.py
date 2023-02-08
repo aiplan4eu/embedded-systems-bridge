@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Example for parallel plan execution."""
 import time
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
 from networkx.drawing.nx_agraph import graphviz_layout
-from unified_planning.shortcuts import *
-from unified_planning.model import StartTiming, EndTiming
+from unified_planning.model import EndTiming, StartTiming
+from unified_planning.shortcuts import OneshotPlanner
 
 from up_bridge.bridge import Bridge
 from up_bridge.executor import Executor
@@ -27,16 +27,14 @@ from up_bridge.executor import Executor
 
 #################### 1. Define the domain ####################
 class Robot:
-    location = ""
+    """Robot class."""
 
-    def __init__(self, cls):
-        cls.location = "l1"
-
-    def move(self, l_to):
-        self.location = l_to
+    location = "l1"
 
 
 class Location:
+    """Location class."""
+
     def __init__(self, name):
         self.name = name
 
@@ -45,6 +43,8 @@ class Location:
 
 
 class Area:
+    """Area class."""
+
     def __init__(self, x_from, x_to, y_from, y_to):
         self.x_from = x_from
         self.x_to = x_to
@@ -56,6 +56,8 @@ class Area:
 
 
 class Move:
+    """Move Action."""
+
     def __init__(self):
         self.l_from = ""
         self.l_to = ""
@@ -65,12 +67,15 @@ class Move:
         self.l_to = str(args[1])
         print(f"Moving from {self.l_from} to {self.l_to}")
         time.sleep(5)
+        Robot.location = self.l_to
 
     def __repr__(self) -> str:
         return "Move"
 
 
 class Survey:
+    """Survey Action."""
+
     def __init__(self):
         self.x_from = ""
         self.x_to = ""
@@ -84,6 +89,8 @@ class Survey:
 
 
 class SendInfo:
+    """Send Info Action."""
+
     def __init__(self):
         self.location = ""
 
@@ -92,19 +99,23 @@ class SendInfo:
         print(f"Sending info about {location}")
 
 
-def robot_at_fun(l: Location):
-    return Robot().location == l
+def robot_at_fun(l: Location):  # pylint: disable=unused-argument
+    """Check if the robot is at the location."""
+    return Robot.location == l
 
 
-def visited_fun(l: Location):
-    return Robot().location == l
+def visited_fun(l: Location):  # pylint: disable=unused-argument
+    """Check if the location is visited."""
+    return Robot.location == l
 
 
 def is_surveyed_fun():
+    """Check if the area is surveyed."""
     return True
 
 
-def info_sent_fun(l: Location):
+def info_sent_fun(l: Location):  # pylint: disable=unused-argument
+    """Send info about the location."""
     return True
 
 
@@ -112,6 +123,7 @@ def info_sent_fun(l: Location):
 
 
 def define_problem():
+    """Define the problem."""
     bridge = Bridge()
 
     bridge.create_types([Location, Area, Robot])
@@ -125,10 +137,10 @@ def define_problem():
     l2 = bridge.create_object("l2", Location("l2"))
     l3 = bridge.create_object("l3", Location("l3"))
     l4 = bridge.create_object("l4", Location("l4"))
-    area = bridge.create_object("area", Area(0, 10, 0, 10))
+    area = bridge.create_object("area", Area(0, 10, 0, 10))  # pylint: disable=unused-variable
 
     move, [l_from, l_to] = bridge.create_action(
-        "Move", callable=Move, l_from=Location, l_to=Location, duration=5
+        "Move", _callable=Move, l_from=Location, l_to=Location, duration=5
     )
     move.add_condition(StartTiming(), info_sent(l_from))
     move.add_condition(StartTiming(), info_sent(l_to))
@@ -137,10 +149,12 @@ def define_problem():
     move.add_effect(EndTiming(), robot_at(l_to), True)
     move.add_effect(EndTiming(), visited(l_to), True)
 
-    survey, [a] = bridge.create_action("Survey", callable=Survey, area=Area, duration=5)
+    survey, [a] = bridge.create_action(  # pylint: disable=unused-variable
+        "Survey", _callable=Survey, area=Area, duration=5
+    )
     survey.add_effect(EndTiming(), is_surveyed(), True)
 
-    send_info, [l] = bridge.create_action("SendInfo", callable=SendInfo, location=Location)
+    send_info, [l] = bridge.create_action("SendInfo", _callable=SendInfo, location=Location)
     send_info.add_precondition(is_surveyed())
     send_info.add_effect(info_sent(l), True)
 

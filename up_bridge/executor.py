@@ -19,6 +19,7 @@ import asyncio
 import networkx as nx
 
 
+# TODO: Move to dispatcher
 class Executor:
     """Add simple executor for UP Bridge. Currently no await is supported.
 
@@ -29,6 +30,8 @@ class Executor:
         pass
 
     def execute(self, graph: nx.DiGraph = None):
+        """Execute the graph."""
+        result = None
         for node in graph.nodes(data=True):
             if node[0] in ["start", "end"]:
                 continue
@@ -44,11 +47,15 @@ class Executor:
                 parameters = node[1]["parameters"]
                 result = node[1]["executor"]()(*parameters)
 
+        return result
+
     async def _execute_concurrent_action(self, action):
         # TODO: Better implementation
         # FIXME: Duplicate execution of actions
         parameters = action[1]["parameters"]
         result = action[1]["executor"]()(*parameters)
+
+        return result
 
     async def _run_concurrent_tasks(self, tasks):
         # TODO: add await on parallel actions

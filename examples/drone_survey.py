@@ -17,10 +17,10 @@
 The problem defined in this example will try to survey a given area with a drone,
 localize some objects, take a closer inspection of the objects and then return to the base station.
 """
-from unified_planning.shortcuts import *
+from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
 from up_bridge.bridge import Bridge
-from up_bridge.components import ActionDefinition, UserTypeDefinition
+from up_bridge.components import UserTypeDefinition
 
 
 class Location(UserTypeDefinition):
@@ -163,7 +163,7 @@ class VerifyStationProblem(Application):
         o_area = self.bridge.create_object(str(self.area), self.area)
 
         move, (a, l_from, l_to) = self.bridge.create_action(
-            "Move", callable=self.move, area=Area, l_from=Location, l_to=Location
+            "Move", _callable=self.move, area=Area, l_from=Location, l_to=Location
         )
         move.add_precondition(f_is_surveyed(a))
         move.add_precondition(f_is_location_surveyed(a, l_to))
@@ -174,7 +174,7 @@ class VerifyStationProblem(Application):
         move.add_effect(f_robot_at(l_to), True)
 
         capture_photo, (a, l) = self.bridge.create_action(
-            "CapturePhoto", callable=self.capture_photo, area=Area, l=Location
+            "CapturePhoto", _callable=self.capture_photo, area=Area, l=Location
         )
         capture_photo.add_precondition(f_is_surveyed(a))
         capture_photo.add_precondition(f_is_location_surveyed(a, l))
@@ -182,12 +182,12 @@ class VerifyStationProblem(Application):
         capture_photo.add_effect(f_verified_station_at(l), True)
         capture_photo.add_effect(f_robot_at(l), True)  # Since using instantaneous actions
 
-        survey, [a] = self.bridge.create_action("Survey", callable=self.survey, area=Area)
+        survey, [a] = self.bridge.create_action("Survey", _callable=self.survey, area=Area)
         survey.add_precondition(Not(f_is_surveyed(a)))
         survey.add_effect(f_is_surveyed(a), True)
 
         gather_info, (a, l) = self.bridge.create_action(
-            "GatherInfo", callable=self.gather_info, area=Area, l=Location
+            "GatherInfo", _callable=self.gather_info, area=Area, l=Location
         )
         gather_info.add_precondition(f_is_surveyed(a))
         gather_info.add_precondition(f_is_within_area(a, l))

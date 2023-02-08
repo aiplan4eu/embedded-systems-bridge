@@ -38,7 +38,9 @@ class UserTypeDefinition:
         return self.name
 
     def keys(self) -> Iterator[str]:
+        """Return the keys of the parameters."""
         return self.parameters.keys()
 
     def values(self) -> Iterator[str]:
+        """Return the values of the parameters."""
         return self.parameters.values()

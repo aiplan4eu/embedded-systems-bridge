@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from up_bridge.plexmo.dispatcher import SequentialPlanDispatcher, PlanDispatcher
+"""Plexmo for UP Bridge."""
+from up_bridge.plexmo.dispatcher import PlanDispatcher, SequentialPlanDispatcher
 from up_bridge.plexmo.monitor import SequentialPlanMonitor
 
-__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor"]
+__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor", "PlanDispatcher"]

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Examples for different ways to define actions on the application side and how to use the up_bridge
+ to create UP representations from them.
+"""
 from enum import Enum
 from typing import Optional
 
@@ -8,19 +12,18 @@ from unified_planning.shortcuts import And, Not, OneshotPlanner
 
 from up_bridge import Bridge
 
-"""
-Examples for different ways to define actions on the application side and how to use the up_bridge
- to create UP representations from them.
-"""
-
 
 class Location(Enum):
+    """Location enum for the bridge example."""
+
     A = "A"
     B = "B"
     C = "C"
 
 
 class Item:
+    """Item class for the bridge example."""
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.location: Optional[Location] = Location.A
@@ -29,10 +32,13 @@ class Item:
         return self.name
 
     def item_at(self, location: Location) -> bool:
+        """Return True if the item is at the given location."""
         return location == self.location
 
 
 class Robot:
+    """Robot class for the bridge example."""
+
     def __init__(self, name: str, location: Location) -> None:
         self.name = name
         self.location = location
@@ -42,17 +48,21 @@ class Robot:
         return self.name
 
     def robot_at(self, location: Location) -> bool:
+        """Return True if the robot is at the given location."""
         return location == self.location
 
     def robot_has(self, item: Item) -> bool:
+        """Return True if the robot has the given item."""
         return item == self.item
 
     def move(self, location_from: Location, location_to: Location) -> None:
+        """Move the robot from location_from to location_to."""
         self.location = location_to
         print(f"{self} moves from {location_from} to {location_to}.")
 
 
 def place_item_onto_robot(robot: Robot, item: Item, location: Location) -> None:
+    """Place item onto robot at location."""
     assert robot.location == item.location == location
     assert robot.item is None
     robot.item = item
@@ -65,16 +75,20 @@ class ActionDefinition:
 
 
 class PassItemAction(ActionDefinition):
+    """Pass item action definition."""
+
     def __call__(self, robot_from: Robot, robot_to: Robot, item: Item) -> None:
         """Let robot_from pass item to robot_to."""
         assert robot_from.item == item
-        assert robot_to.item == None
+        assert robot_to.item is None
         robot_from.item = None
         robot_to.item = item
         print(f"{robot_from} passes {item} to {robot_to}.")
 
 
 class ActionDefinitionsExample(Bridge):
+    """An example bridge that uses action definitions."""
+
     def __init__(self) -> None:
         super().__init__()
         self.create_types([Location, Item, Robot])
@@ -106,8 +120,8 @@ class ActionDefinitionsExample(Bridge):
         # The purpose of the set_api_actions() method is to make action declaration independent of
         #  its implementation. Intended usage are cases when the later can be implemented in a
         #  subclass of the former. The following commands would achieve the same in one step:
-        # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move)
-        # self.move, (robot, location_from, location_to) = self.create_action("move", callable=Robot.move, robot=Robot, location_from=Location, location_to=Location)
+        # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move) # pylint: disable=line-too-long
+        # self.move, (robot, location_from, location_to) = self.create_action("move", callable=Robot.move, robot=Robot, location_from=Location, location_to=Location) # pylint: disable=line-too-long
         self.move.add_precondition(self.robot_at(robot, location_from))
         self.move.add_precondition(
             And(Not(self.robot_at(robot, location_to)) for robot in self.robots)
@@ -121,9 +135,9 @@ class ActionDefinitionsExample(Bridge):
         )
         # For functions which do not use self as parameter for the UP action,
         #  create_action_from_function() is the same as any one of the following commands:
-        # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot), place_item_onto_robot)
-        # self.place, (robot, item, location) = self.create_action("place", place_item_onto_robot.__annotations__, place_item_onto_robot)
-        # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot, robot=Robot, item=Item, location=Location)
+        # self.place, (robot, item, location) = self.create_action(*self.get_name_and_signature(place_item_onto_robot), place_item_onto_robot) # pylint: disable=line-too-long
+        # self.place, (robot, item, location) = self.create_action("place", place_item_onto_robot.__annotations__, place_item_onto_robot) # pylint: disable=line-too-long
+        # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot, robot=Robot, item=Item, location=Location) # pylint: disable=line-too-long
         self.place.add_precondition(self.item_at(item, location))
         self.place.add_precondition(self.robot_at(robot, location))
         self.place.add_precondition(And(Not(self.robot_has(robot, item)) for item in self.items))
@@ -147,6 +161,7 @@ class ActionDefinitionsExample(Bridge):
         self.pass_item.add_effect(self.robot_has(robot_to, item), True)
 
     def test(self) -> None:
+        """Test the problem."""
         problem = Problem()
         problem.add_objects(self.locations)
         problem.add_object(self.tool)
@@ -164,13 +179,14 @@ class ActionDefinitionsExample(Bridge):
         with OneshotPlanner(problem_kind=problem.kind) as planner:
             result = planner.solve(problem)
             for action in result.plan.actions:
-                callable, parameters = self.get_executable_action(action)
-                callable(*parameters)
+                _callable, parameters = self.get_executable_action(action)
+                _callable(*parameters)
         assert self.api_robot2.robot_has(self.api_tool)
         assert self.api_robot2.robot_at(Location.C)
 
 
 def test_create_action() -> None:
+    """Test the create_action() method.""" ""
     up.shortcuts.get_env().credits_stream = None
     ActionDefinitionsExample().test()
 

@@ -20,6 +20,8 @@ from unified_planning.test.examples import get_example_problems
 
 from up_bridge.plexmo.monitor import SequentialPlanMonitor
 
+# pylint: disable=all
+
 
 class TestSequentialMonitor(unittest.TestCase):
     @classmethod
