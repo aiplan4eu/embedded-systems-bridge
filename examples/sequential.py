@@ -15,7 +15,6 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
-from networkx.drawing.nx_agraph import graphviz_layout
 from unified_planning.shortcuts import OneshotPlanner
 
 from up_bridge.bridge import Bridge
@@ -130,7 +129,7 @@ def main():
     # draw graph
     plt.figure(figsize=(10, 10))
 
-    pos = graphviz_layout(graph_executor, prog="dot")
+    pos = nx.nx_pydot.pydot_layout(graph_executor, prog="dot")
     nx.draw(
         graph_executor, pos, with_labels=True, node_size=2000, node_color="skyblue", font_size=20
     )

@@ -21,7 +21,7 @@ dependencies = [
   "unified-planning",
   "networkx",
   "matplotlib",
-  "pygraphviz"
+  "pydot",
 ]
 description = "General functionalities for using unified-planning in applications"
 keywords = ["unified-planning", "unified-planning-bridge"]
