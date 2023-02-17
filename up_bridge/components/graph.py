@@ -1,4 +1,5 @@
-# Copyright 2022 Selvakumar H S, LAAS-CNRS
+# Copyright 2022, 2023 LAAS-CNRS
+# Copyright 2023 DFKI
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Authors:
+# - Selvakumar H S, LAAS-CNRS
+# - Sebastian Stock, DFKI
 
 """Module to convert UP Plan to Dependency Graph and execute it."""
 from typing import Union
 
 import networkx as nx
+from unified_planning.plans.partial_order_plan import PartialOrderPlan
 from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.plans.time_triggered_plan import TimeTriggeredPlan
 
@@ -27,6 +32,23 @@ def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> 
     if isinstance(plan, TimeTriggeredPlan):
         return _time_triggered_plan_to_dependency_graph(plan)
     raise NotImplementedError("Plan type not supported")
+
+
+def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGraph:
+    """Convert UP Partial Order Plan to Dependency Graph."""
+    adjancency_list = plan.get_adjacency_list
+    dependency_graph = nx.DiGraph(adjancency_list)
+    # add start node and edges to nodes without predecessors
+    start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
+    dependency_graph.add_node("start", action="start", parameters=())
+    for node in start_nodes:
+        dependency_graph.add_edge("start", node)
+    # add end node and edges from nodes without successors
+    dependency_graph.add_node("end", action="end", parameters=())
+    for node, successors in adjancency_list.items():
+        if len(successors) == 0:
+            dependency_graph.add_edge(node, "end")
+    return dependency_graph
 
 
 def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
