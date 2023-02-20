@@ -37,7 +37,12 @@ from unified_planning.model import (
     Problem,
     Type,
 )
-from unified_planning.plans import ActionInstance, SequentialPlan, TimeTriggeredPlan
+from unified_planning.plans import (
+    ActionInstance,
+    PartialOrderPlan,
+    SequentialPlan,
+    TimeTriggeredPlan,
+)
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
 from up_bridge.components.graph import plan_to_dependency_graph
@@ -334,7 +339,9 @@ class Bridge:
         ).solve(problem)
         return result.plan.actions if result.plan else None
 
-    def get_executable_graph(self, plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:
+    def get_executable_graph(
+        self, plan: Union[SequentialPlan, TimeTriggeredPlan, PartialOrderPlan]
+    ) -> nx.DiGraph:
         """Get executable graph from plan."""
         executable_graph = plan_to_dependency_graph(plan)
 

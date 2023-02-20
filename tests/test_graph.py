@@ -18,7 +18,7 @@ from unified_planning.plans.partial_order_plan import PartialOrderPlan
 from unified_planning.shortcuts import PlanKind
 from unified_planning.test.examples import get_example_problems
 
-from up_bridge.components.graph import _partial_order_plan_to_dependency_graph
+from up_bridge.components.graph import plan_to_dependency_graph
 
 
 class TestPartialOrderPlanGeneration(unittest.TestCase):
@@ -27,7 +27,7 @@ class TestPartialOrderPlanGeneration(unittest.TestCase):
         problem, plan = example_problems["robot_fluent_of_user_type"]
         pop = plan.convert_to(PlanKind.PARTIAL_ORDER_PLAN, problem)
         assert isinstance(pop, PartialOrderPlan)
-        dep_graph = _partial_order_plan_to_dependency_graph(pop)
+        dep_graph = plan_to_dependency_graph(pop)
         self.assertTrue(dep_graph.has_node("start"))
         self.assertTrue(dep_graph.has_node("end"))
         self.assertTrue(dep_graph.has_edge("start", plan.actions[0]))

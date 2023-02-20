@@ -31,6 +31,8 @@ def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> 
         return _sequential_plan_to_dependency_graph(plan)
     if isinstance(plan, TimeTriggeredPlan):
         return _time_triggered_plan_to_dependency_graph(plan)
+    if isinstance(plan, PartialOrderPlan):
+        return _partial_order_plan_to_dependency_graph(plan)
     raise NotImplementedError("Plan type not supported")
 
 
