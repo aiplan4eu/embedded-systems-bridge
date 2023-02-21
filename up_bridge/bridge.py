@@ -37,6 +37,7 @@ from unified_planning.model import (
     Problem,
     Type,
 )
+from unified_planning.model.metrics import MinimizeSequentialPlanLength
 from unified_planning.plans import (
     ActionInstance,
     PartialOrderPlan,
@@ -329,14 +330,21 @@ class Bridge:
 
     @staticmethod
     def solve(
-        problem: Problem, planner_name: Optional[str] = None
+        problem: Problem, planner_name: Optional[str] = None, optimize_with_default_metric=True
     ) -> Optional[List[ActionInstance]]:
         """Solve planning problem and return list of UP actions."""
-        result = OneshotPlanner(
-            name=planner_name,
-            problem_kind=problem.kind,
-            optimality_guarantee=OptimalityGuarantee.SOLVED_OPTIMALLY,
-        ).solve(problem)
+        if optimize_with_default_metric:
+            if not any(
+                isinstance(metric, MinimizeSequentialPlanLength)
+                for metric in problem.quality_metrics
+            ):
+                problem.add_quality_metric(MinimizeSequentialPlanLength())
+            planner = OneshotPlanner(
+                problem_kind=problem.kind, optimality_guarantee=OptimalityGuarantee.SOLVED_OPTIMALLY
+            )
+        else:
+            planner = OneshotPlanner(name=planner_name, problem_kind=problem.kind)
+        result = planner.solve(problem)
         return result.plan.actions if result.plan else None
 
     def get_executable_graph(
