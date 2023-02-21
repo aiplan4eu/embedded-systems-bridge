@@ -30,10 +30,12 @@ class TestPartialOrderPlanGeneration(unittest.TestCase):
         dep_graph = plan_to_dependency_graph(pop)
         self.assertTrue(dep_graph.has_node("start"))
         self.assertTrue(dep_graph.has_node("end"))
-        self.assertTrue(dep_graph.has_edge("start", plan.actions[0]))
-        self.assertTrue(dep_graph.has_edge("start", plan.actions[1]))
-        self.assertTrue(dep_graph.has_edge(plan.actions[0], "end"))
-        self.assertTrue(dep_graph.has_edge(plan.actions[1], "end"))
+        node0_name = f"{plan.actions[0].action.name}{plan.actions[0].actual_parameters}"
+        node1_name = f"{plan.actions[1].action.name}{plan.actions[1].actual_parameters}"
+        self.assertTrue(dep_graph.has_edge("start", node0_name))
+        self.assertTrue(dep_graph.has_edge("start", node1_name))
+        self.assertTrue(dep_graph.has_edge(node0_name, "end"))
+        self.assertTrue(dep_graph.has_edge(node1_name, "end"))
 
 
 if __name__ == "__main__":

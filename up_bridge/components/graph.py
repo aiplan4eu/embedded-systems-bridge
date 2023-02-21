@@ -25,7 +25,9 @@ from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.plans.time_triggered_plan import TimeTriggeredPlan
 
 
-def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> nx.DiGraph:
+def plan_to_dependency_graph(
+    plan: Union[SequentialPlan, TimeTriggeredPlan, PartialOrderPlan]
+) -> nx.DiGraph:
     """Convert UP Plan to Dependency Graph."""
     if isinstance(plan, SequentialPlan):
         return _sequential_plan_to_dependency_graph(plan)
@@ -38,18 +40,26 @@ def plan_to_dependency_graph(plan: Union[SequentialPlan, TimeTriggeredPlan]) -> 
 
 def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGraph:
     """Convert UP Partial Order Plan to Dependency Graph."""
-    adjancency_list = plan.get_adjacency_list
-    dependency_graph = nx.DiGraph(adjancency_list)
+    dependency_graph = nx.DiGraph()
+    dependency_graph.add_node("end", action="end", parameters=())
+    for action, successors in plan.get_adjacency_list.items():
+        action_name = action.action.name
+        params = action.actual_parameters
+        node_name = f"{action_name}{params}"
+        dependency_graph.add_node(node_name, action=action_name, parameters=params)
+        # add edges to successors
+        for succ in successors:
+            succ_node_name = f"{succ.action.name}{succ.actual_parameters}"
+            dependency_graph.add_edge(node_name, succ_node_name)
+        # add end node and edges from nodes without successors
+        if len(successors) == 0:
+            dependency_graph.add_edge(node_name, "end")
+
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
     dependency_graph.add_node("start", action="start", parameters=())
     for node in start_nodes:
         dependency_graph.add_edge("start", node)
-    # add end node and edges from nodes without successors
-    dependency_graph.add_node("end", action="end", parameters=())
-    for node, successors in adjancency_list.items():
-        if len(successors) == 0:
-            dependency_graph.add_edge(node, "end")
     return dependency_graph
 
 
