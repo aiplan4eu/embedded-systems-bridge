@@ -181,7 +181,7 @@ def define_problem():
 
 def main():
     """Main function"""
-    up.shortcuts.get_env().credits_stream = None
+    up.shortcuts.get_environment().credits_stream = None
     bridge, problem = define_problem()
     executor = Executor()
 
