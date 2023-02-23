@@ -171,14 +171,24 @@ def main():
     print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
-    executor.execute(graph_executor)
+    # executor.execute(graph_executor)
 
     # draw graph
     plt.figure(figsize=(10, 10))
 
+    labels = {}
+    for node in graph_executor.nodes(data=True):
+        labels[node[0]] = node[1]["node_name"]
+
     pos = nx.nx_pydot.pydot_layout(graph_executor, prog="dot")
     nx.draw(
-        graph_executor, pos, with_labels=True, node_size=2000, node_color="skyblue", font_size=20
+        graph_executor,
+        pos,
+        with_labels=True,
+        labels=labels,
+        node_size=2000,
+        node_color="skyblue",
+        font_size=20,
     )
     plt.show()
 
