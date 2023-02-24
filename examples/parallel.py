@@ -171,7 +171,7 @@ def main():
     print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
-    # executor.execute(graph_executor)
+    executor.execute(graph_executor)
 
     # draw graph
     plt.figure(figsize=(10, 10))
