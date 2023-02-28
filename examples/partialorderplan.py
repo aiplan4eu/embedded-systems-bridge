@@ -124,9 +124,19 @@ def main():
     # draw graph
     plt.figure(figsize=(10, 10))
 
+    labels = {}
+    for node in dependency_graph.nodes(data=True):
+        labels[node[0]] = node[1]["node_name"]
+
     pos = nx.nx_pydot.pydot_layout(dependency_graph, prog="dot")
     nx.draw(
-        dependency_graph, pos, with_labels=True, node_size=2000, node_color="skyblue", font_size=20
+        dependency_graph,
+        pos,
+        with_labels=True,
+        labels=labels,
+        node_size=2000,
+        node_color="skyblue",
+        font_size=20,
     )
     plt.show()
 

@@ -45,12 +45,16 @@ def plan_to_dependency_graph(
 def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGraph:
     """Convert UP Partial Order Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    dependency_graph.add_node("end", action="end", parameters=())
+
+    # TODO: Add node ID as integers
+    dependency_graph.add_node("end", node_name="end", action="end", parameters=())
     for action, successors in plan.get_adjacency_list.items():
         action_name = action.action.name
         params = action.actual_parameters
         node_name = f"{action_name}{params}"
-        dependency_graph.add_node(node_name, action=action_name, parameters=params)
+        dependency_graph.add_node(
+            node_name, node_name=node_name, action=action_name, parameters=params
+        )
         # add edges to successors
         for succ in successors:
             succ_node_name = f"{succ.action.name}{succ.actual_parameters}"
@@ -61,9 +65,10 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
 
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
-    dependency_graph.add_node("start", action="start", parameters=())
+    dependency_graph.add_node("start", node_name="start", action="start", parameters=())
     for node in start_nodes:
         dependency_graph.add_edge("start", node)
+
     return dependency_graph
 
 
