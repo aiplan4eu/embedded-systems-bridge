@@ -46,34 +46,51 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
     """Convert UP Partial Order Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
 
-    # TODO: Add node ID as integers
-    dependency_graph.add_node("end", node_name="end", action="end", parameters=())
+    # Prepare Node IDs
+    nodes = set()
+    node_map = {}
+    for action, successors in plan.get_adjacency_list.items():
+        action_name = action.action.name
+        params = action.actual_parameters
+        node_name = f"{action_name}{params}"
+        nodes.add(node_name)
+        for succ in successors:
+            succ_node_name = f"{succ.action.name}{succ.actual_parameters}"
+            nodes.add(succ)
+    nodes.add("start")
+    nodes.add("end")
+
+    for i, node in enumerate(nodes):
+        node_map[node] = i
+    print(node_map)
+
+    dependency_graph.add_node(node_map["end"], node_name="end", action="end", parameters=())
     for action, successors in plan.get_adjacency_list.items():
         action_name = action.action.name
         params = action.actual_parameters
         node_name = f"{action_name}{params}"
         dependency_graph.add_node(
-            node_name, node_name=node_name, action=action_name, parameters=params
+            node_map[node_name], node_name=node_name, action=action_name, parameters=params
         )
         # add edges to successors
         for succ in successors:
             succ_node_name = f"{succ.action.name}{succ.actual_parameters}"
-            dependency_graph.add_edge(node_name, succ_node_name)
+            dependency_graph.add_edge(node_map[node_name], node_map[succ_node_name])
         # add end node and edges from nodes without successors
         if len(successors) == 0:
-            dependency_graph.add_edge(node_name, "end")
+            dependency_graph.add_edge(node_map[node_name], node_map["end"])
 
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
-    dependency_graph.add_node("start", node_name="start", action="start", parameters=())
+    dependency_graph.add_node(node_map["start"], node_name="start", action="start", parameters=())
     for node in start_nodes:
-        dependency_graph.add_edge("start", node)
+        dependency_graph.add_edge(node_map["start"], node)
 
     return dependency_graph
 
 
 def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
-    """Convert UP Plan to Dependency Graph."""
+    """Convert UP Sequential Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
     dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
@@ -97,7 +114,7 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
 
 
 def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGraph:
-    """Convert UP Plan to Dependency Graph."""
+    """Convert UP Time Triggered Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
     dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
