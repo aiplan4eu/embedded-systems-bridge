@@ -92,7 +92,7 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
         child_id = i + 1
         dependency_graph.add_node(
             child_id,
-            node_name=action,
+            node_name=str(action),
             action=action.action.name,
             parameters=action.actual_parameters,
         )
@@ -131,7 +131,9 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
                     next_child_name = f"{str(next_action)}({next_duration}s)"
 
                     next_parent_id = next_parent[0]
-                    next_child_id = _get_node_id(dependency_graph, next_child_name)
+                    next_child_id = _get_node_id(
+                        dependency_graph, next_child_name
+                    )  # TODO: picks previously available node name
                     if next_child_id is None:
                         next_child_id = child_id + 1
                         dependency_graph.add_node(
