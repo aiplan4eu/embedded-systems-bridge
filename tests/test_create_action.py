@@ -187,7 +187,7 @@ class ActionDefinitionsExample(Bridge):
 
 def test_create_action() -> None:
     """Test the create_action() method.""" ""
-    up.shortcuts.get_env().credits_stream = None
+    up.shortcuts.get_environment().credits_stream = None
     ActionDefinitionsExample().test()
 
 
