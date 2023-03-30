@@ -36,6 +36,5 @@ class TestSequentialMonitor(unittest.TestCase):
 
         # after applying the first action, its preconditions are not fulfilled, anymore
         simulator = UPSequentialSimulator(self._example.problem)
-        events = simulator.get_events(instance.action, instance.actual_parameters)
-        state = simulator.apply(events[0], state)
+        state = simulator.apply(state, instance.action, instance.actual_parameters)
         self.assertFalse(monitor.check_preconditions(instance, state)[0])

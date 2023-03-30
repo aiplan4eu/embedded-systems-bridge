@@ -34,10 +34,7 @@ class SequentialPlanMonitor:
         Returns result of checking preconditions of a given `ActionInstance` in the `State`
         and a list of the precondtions that are not fulfilled.
         """
-        events = self._simulator.get_events(instance.action, instance.actual_parameters)
-        assert len(events) == 1
-        self._simulator.is_applicable(events[0], state)
         unsatisfied = self._simulator.get_unsatisfied_conditions(
-            events[0], state, early_termination=False
+            state, instance.action, instance.actual_parameters, early_termination=False
         )
         return (len(unsatisfied) == 0, unsatisfied)
