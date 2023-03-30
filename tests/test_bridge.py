@@ -17,8 +17,8 @@ from typing import Callable, Dict
 import pytest
 from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
-from up_bridge.bridge import Bridge
-from up_bridge.components import ActionDefinition, UserTypeDefinition
+from esb.bridge import Bridge
+from esb.components import ActionDefinition, UserTypeDefinition
 
 # pylint: disable=all
 ############################################################################################################

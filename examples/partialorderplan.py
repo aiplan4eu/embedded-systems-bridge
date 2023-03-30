@@ -35,8 +35,8 @@ from parallel import (
 from unified_planning.plans import SequentialPlan
 from unified_planning.shortcuts import OneshotPlanner, PlanKind
 
-from up_bridge.bridge import Bridge
-from up_bridge.executor import Executor
+from esb.bridge import Bridge
+from esb.executor import Executor
 
 # Define the problem. The domain is re-used from examples/parallel.py
 

@@ -18,7 +18,7 @@ from unified_planning.plans.partial_order_plan import PartialOrderPlan
 from unified_planning.shortcuts import PlanKind
 from unified_planning.test.examples import get_example_problems
 
-from up_bridge.components.graph import plan_to_dependency_graph
+from esb.components.graph import plan_to_dependency_graph
 
 
 class TestPartialOrderPlanGeneration(unittest.TestCase):

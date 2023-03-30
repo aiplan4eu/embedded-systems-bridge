@@ -1,4 +1,4 @@
-# Copyright 2022 Selvakumar H S, LAAS-CNRS
+# Copyright 2022 Sebastian Stock, DFKI
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unified Planning Bridge."""
-from up_bridge.bridge import Bridge
-from up_bridge.components import *
+"""Plexmo for UP Bridge."""
+from esb.plexmo.dispatcher import PlanDispatcher, SequentialPlanDispatcher
+from esb.plexmo.monitor import SequentialPlanMonitor
+
+__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor", "PlanDispatcher"]

@@ -18,7 +18,7 @@ from unified_planning.engines import SequentialSimulator
 from unified_planning.model import UPCOWState
 from unified_planning.test.examples import get_example_problems
 
-from up_bridge.plexmo.monitor import SequentialPlanMonitor
+from esb.plexmo.monitor import SequentialPlanMonitor
 
 # pylint: disable=all
 

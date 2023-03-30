@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Useful components for UP Bridge."""
-from up_bridge.components.actions import ActionDefinition
-from up_bridge.components.user_types import UserTypeDefinition
+from esb.components.actions import ActionDefinition
+from esb.components.user_types import UserTypeDefinition
 
 __all__ = ["ActionDefinition", "UserTypeDefinition"]

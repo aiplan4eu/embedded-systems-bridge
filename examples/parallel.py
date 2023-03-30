@@ -20,8 +20,8 @@ import unified_planning as up
 from unified_planning.model import EndTiming, StartTiming
 from unified_planning.shortcuts import OneshotPlanner
 
-from up_bridge.bridge import Bridge
-from up_bridge.executor import Executor
+from esb.bridge import Bridge
+from esb.executor import Executor
 
 
 #################### 1. Define the domain ####################

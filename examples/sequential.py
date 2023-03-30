@@ -17,8 +17,8 @@ import networkx as nx
 import unified_planning as up
 from unified_planning.shortcuts import OneshotPlanner
 
-from up_bridge.bridge import Bridge
-from up_bridge.plexmo import PlanDispatcher
+from esb.bridge import Bridge
+from esb.plexmo import PlanDispatcher
 
 
 #################### 1. Define the domain ####################
