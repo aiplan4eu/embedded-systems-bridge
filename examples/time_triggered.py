@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
 from unified_planning.model import EndTiming, StartTiming
-from unified_planning.shortcuts import ClosedTimeInterval, Not, OneshotPlanner
+from unified_planning.shortcuts import ClosedTimeInterval, Not
 
 from up_bridge.bridge import Bridge
 from up_bridge.plexmo import PlanDispatcher
@@ -33,6 +33,9 @@ class Match:
     def __init__(self, name):
         self.name = name
 
+    def __repr__(self) -> str:
+        return self.name
+
 
 class Fuse:
     """Fuse class."""
@@ -40,26 +43,29 @@ class Fuse:
     def __init__(self, name):
         self.name = name
 
+    def __repr__(self) -> str:
+        return self.name
 
-class LightMatch:
-    """Light match action."""
+
+class TemporalActions:
+    """Class for temporal actions."""
 
     def __init__(self):
         self.m = None
+        self.f = None
 
-    def __call__(self, m: Match):
+    def light_match(self, m: Match):
+        """Light match action."""
+        self.m = m
+
         print(f"Lighting match {m}")
         time.sleep(5)
         return True
 
+    def mend_fuse(self, f: Fuse):
+        """Mend fuse action."""
+        self.f = f
 
-class MendFuse:
-    """Mend fuse action."""
-
-    def __init__(self):
-        self.f = None
-
-    def __call__(self, f: Fuse):
         print(f"Mending fuse {f}")
         time.sleep(3)
         return True
@@ -94,6 +100,7 @@ def light_match_fun(m: Match):  # pylint: disable=unused-argument
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
+    actions = TemporalActions()
 
     bridge.create_types([Match, Fuse])
 
@@ -109,13 +116,17 @@ def define_problem():
     m2 = bridge.create_object("m2", Match("m2"))
     m3 = bridge.create_object("m3", Match("m3"))
 
-    light_match, [m] = bridge.create_action("LightMatch", _callable=LightMatch, m=Match, duration=5)
+    light_match, [m] = bridge.create_action(
+        "LightMatch", _callable=actions.light_match, m=Match, duration=5
+    )
     light_match.add_condition(StartTiming(), Not(match_used(m)))
     light_match.add_effect(StartTiming(), match_used(m), True)
     light_match.add_effect(StartTiming(), light, True)
     light_match.add_effect(EndTiming(), light, False)
 
-    mend_fuse, [f] = bridge.create_action("MendFuse", _callable=MendFuse, f=Fuse, duration=3)
+    mend_fuse, [f] = bridge.create_action(
+        "MendFuse", _callable=actions.mend_fuse, f=Fuse, duration=3
+    )
     mend_fuse.add_condition(StartTiming(), handsfree)
     mend_fuse.add_condition(ClosedTimeInterval(StartTiming(), EndTiming()), light)
     mend_fuse.add_effect(StartTiming(), handsfree, False)
@@ -144,13 +155,12 @@ def main():
     bridge, problem = define_problem()
     dispatcher = PlanDispatcher()
 
-    with OneshotPlanner(name="aries") as planner:
-        result = planner.solve(problem)
-        print("*** Result ***")
-        for action_instance in result.plan.timed_actions:
-            print(action_instance)
-        print("*** End of result ***")
-        plan = result.plan
+    plan = bridge.solve(problem, planner_name="aries", optimize_with_default_metric=False)
+    print("*" * 10)
+    print("* Plan *")
+    for action in plan.timed_actions:
+        print(action)
+    print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
     dispatcher.execute_plan(graph_executor)

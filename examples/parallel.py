@@ -18,19 +18,13 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
 from unified_planning.model import EndTiming, StartTiming
-from unified_planning.shortcuts import OneshotPlanner
 
 from up_bridge.bridge import Bridge
 from up_bridge.executor import Executor
 
 
+# TODO: Better example
 #################### 1. Define the domain ####################
-class Robot:
-    """Robot class."""
-
-    location = "l1"
-
-
 class Location:
     """Location class."""
 
@@ -54,48 +48,31 @@ class Area:
         return f"Area-{self.x_from}-{self.x_to}-{self.y_from}-{self.y_to}"
 
 
-class Move:
-    """Move Action."""
+class Robot:
+    """Robot class."""
+
+    location = "l1"
 
     def __init__(self):
         self.l_from = ""
         self.l_to = ""
 
-    def __call__(self, *args, **kwargs):
-        self.l_from = str(args[0])
-        self.l_to = str(args[1])
+    def move(self, l_from: Location, l_to: Location):
+        """Move the robot from one location to another."""
+
+        self.l_from, self.l_to = l_from, l_to
         print(f"Moving from {self.l_from} to {self.l_to}")
-        time.sleep(5)
-        Robot.location = self.l_to
+        time.sleep(2)
 
-    def __repr__(self) -> str:
-        return "Move"
-
-
-class Survey:
-    """Survey Action."""
-
-    def __init__(self):
-        self.x_from = ""
-        self.x_to = ""
-        self.y_from = ""
-        self.y_to = ""
-
-    def __call__(self, *args, **kwargs):
-        area = str(args[0])
+    def survey(self, area: Area):
+        """Survey the area."""
         print(f"Surveying area {area}")
         time.sleep(5)
 
-
-class SendInfo:
-    """Send Info Action."""
-
-    def __init__(self):
-        self.location = ""
-
-    def __call__(self, location: Location):
-        self.location = location
+    def send_info(self, location: Location):
+        """Send info about the location."""
         print(f"Sending info about {location}")
+        self.l_to = location
 
 
 def robot_at_fun(l: Location):  # pylint: disable=unused-argument
@@ -124,6 +101,7 @@ def info_sent_fun(l: Location):  # pylint: disable=unused-argument
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
+    robot = Robot()
 
     bridge.create_types([Location, Area, Robot])
 
@@ -139,7 +117,7 @@ def define_problem():
     area = bridge.create_object("area", Area(0, 10, 0, 10))  # pylint: disable=unused-variable
 
     move, [l_from, l_to] = bridge.create_action(
-        "Move", _callable=Move, l_from=Location, l_to=Location, duration=5
+        "Move", _callable=robot.move, l_from=Location, l_to=Location, duration=5
     )
     move.add_condition(StartTiming(), info_sent(l_from))
     move.add_condition(StartTiming(), info_sent(l_to))
@@ -149,11 +127,11 @@ def define_problem():
     move.add_effect(EndTiming(), visited(l_to), True)
 
     survey, [a] = bridge.create_action(  # pylint: disable=unused-variable
-        "Survey", _callable=Survey, area=Area, duration=5
+        "Survey", _callable=robot.survey, area=Area, duration=5
     )
     survey.add_effect(EndTiming(), is_surveyed(), True)
 
-    send_info, [l] = bridge.create_action("SendInfo", _callable=SendInfo, location=Location)
+    send_info, [l] = bridge.create_action("SendInfo", _callable=robot.send_info, location=Location)
     send_info.add_precondition(is_surveyed())
     send_info.add_effect(info_sent(l), True)
 
@@ -185,13 +163,12 @@ def main():
     bridge, problem = define_problem()
     executor = Executor()
 
-    with OneshotPlanner(name="aries") as planner:
-        result = planner.solve(problem)
-        print("*** Result ***")
-        for action_instance in result.plan.timed_actions:
-            print(action_instance)
-        print("*** End of result ***")
-        plan = result.plan
+    plan = bridge.solve(problem, planner_name="aries", optimize_with_default_metric=False)
+    print("*" * 10)
+    print("* Plan *")
+    for action in plan.timed_actions:
+        print(action)
+    print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
     executor.execute(graph_executor)

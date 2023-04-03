@@ -15,19 +15,12 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
-from unified_planning.shortcuts import OneshotPlanner
 
 from up_bridge.bridge import Bridge
 from up_bridge.plexmo import PlanDispatcher
 
 
 #################### 1. Define the domain ####################
-class Robot:
-    """Robot class."""
-
-    location = "l1"
-
-
 class Location:
     """Location class."""
 
@@ -38,23 +31,23 @@ class Location:
         return self.name
 
 
-class Move:
-    """Move Action."""
+class Robot:
+    """Robot class."""
+
+    location = "l1"
 
     def __init__(self):
         self.l_from = ""
         self.l_to = ""
 
-    def __call__(self, *args, **kwargs):
-        self.l_from = str(args[0])
-        self.l_to = str(args[1])
+    def move(self, l_from: Location, l_to: Location):
+        """Move the robot from one location to another."""
+
+        self.l_from, self.l_to = l_from, l_to
         print(f"Moving from {self.l_from} to {self.l_to}")
         Robot.location = self.l_to
 
         return True
-
-    def __repr__(self) -> str:
-        return "Move"
 
 
 def robot_at_fun(l: Location):
@@ -73,8 +66,9 @@ def visited_fun(l: Location):
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
+    robot = Robot()
 
-    bridge.create_types([Location])
+    bridge.create_types([Location, Robot])
 
     robot_at = bridge.create_fluent_from_function(robot_at_fun)
     visited = bridge.create_fluent_from_function(visited_fun)
@@ -85,7 +79,7 @@ def define_problem():
     l4 = bridge.create_object("l4", Location("l4"))
 
     move, [l_from, l_to] = bridge.create_action(
-        "Move", _callable=Move, l_from=Location, l_to=Location
+        "Move", _callable=robot.move, l_from=Location, l_to=Location
     )
     move.add_precondition(robot_at(l_from))
     move.add_effect(robot_at(l_from), False)
@@ -115,13 +109,13 @@ def main():
     bridge, problem = define_problem()
     dispatcher = PlanDispatcher()
 
-    with OneshotPlanner(name="pyperplan") as planner:
-        result = planner.solve(problem)
-        print("*** Result ***")
-        for action_instance in result.plan.actions:
-            print(action_instance)
-        print("*** End of result ***")
-        plan = result.plan
+    plan = bridge.solve(problem, planner_name="pyperplan")
+
+    print("*" * 10)
+    print("* Plan *")
+    for action in plan.actions:
+        print(action)
+    print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
     dispatcher.execute_plan(graph_executor)
