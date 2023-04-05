@@ -19,8 +19,8 @@ import networkx as nx
 import unified_planning as up
 from unified_planning.model import EndTiming, StartTiming
 
-from up_bridge.bridge import Bridge
-from up_bridge.executor import Executor
+from up_esb.bridge import Bridge
+from up_esb.executor import Executor
 
 
 # TODO: Better example

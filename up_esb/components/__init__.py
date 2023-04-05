@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Useful components for UP Bridge."""
+from up_esb.components.actions import ActionDefinition
+from up_esb.components.user_types import UserTypeDefinition
 
-"""Unified Planning Bridge."""
-from up_bridge.bridge import Bridge
-from up_bridge.components import *
+__all__ = ["ActionDefinition", "UserTypeDefinition"]

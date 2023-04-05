@@ -1,4 +1,4 @@
-# Copyright 2022 Sebastian Stock, DFKI
+# Copyright 2022 Selvakumar H S, LAAS-CNRS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Plexmo for UP Bridge."""
-from up_bridge.plexmo.dispatcher import PlanDispatcher, SequentialPlanDispatcher
-from up_bridge.plexmo.monitor import SequentialPlanMonitor
-
-__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor", "PlanDispatcher"]
+"""Embedded Systems Bridge."""
+from up_esb.bridge import Bridge
+from up_esb.components import *

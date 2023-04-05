@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import unified_planning as up
 
-from up_bridge.bridge import Bridge
-from up_bridge.plexmo import PlanDispatcher
+from up_esb.bridge import Bridge
+from up_esb.plexmo import PlanDispatcher
 
 
 #################### 1. Define the domain ####################
