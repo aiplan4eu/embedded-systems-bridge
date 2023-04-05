@@ -14,8 +14,8 @@
 
 import unittest
 
-from unified_planning.engines import SequentialSimulator
-from unified_planning.model import UPCOWState
+from unified_planning.engines import UPSequentialSimulator
+from unified_planning.model import UPState
 from unified_planning.test.examples import get_example_problems
 
 from up_bridge.plexmo.monitor import SequentialPlanMonitor
@@ -31,11 +31,10 @@ class TestSequentialMonitor(unittest.TestCase):
     def test_check_preconditions(self):
         instance = self._example.plan.actions[0]
         monitor = SequentialPlanMonitor(self._example.problem)
-        state = UPCOWState(self._example.problem.initial_values)
+        state = UPState(self._example.problem.initial_values)
         self.assertTrue(monitor.check_preconditions(instance, state)[0])
 
         # after applying the first action, its preconditions are not fulfilled, anymore
-        simulator = SequentialSimulator(self._example.problem)
-        events = simulator.get_events(instance.action, instance.actual_parameters)
-        state = simulator.apply(events[0], state)
+        simulator = UPSequentialSimulator(self._example.problem)
+        state = simulator.apply(state, instance.action, instance.actual_parameters)
         self.assertFalse(monitor.check_preconditions(instance, state)[0])

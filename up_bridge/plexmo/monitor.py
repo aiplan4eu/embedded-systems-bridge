@@ -14,10 +14,10 @@
 """Monitoring of a SequentialPlan."""
 from typing import List, Tuple
 
-from unified_planning.engines import SequentialSimulator
+from unified_planning.engines import UPSequentialSimulator
 from unified_planning.model.fnode import FNode
 from unified_planning.model.problem import Problem
-from unified_planning.model.state import ROState
+from unified_planning.model.state import State
 from unified_planning.plans.plan import ActionInstance
 
 
@@ -25,19 +25,16 @@ class SequentialPlanMonitor:
     """Monitors a SequentialPlan"""
 
     def __init__(self, problem: Problem):
-        self._simulator = SequentialSimulator(problem)
+        self._simulator = UPSequentialSimulator(problem)
 
     def check_preconditions(
-        self, instance: ActionInstance, state: ROState
+        self, instance: ActionInstance, state: State
     ) -> Tuple[bool, List[FNode]]:
         """
-        Returns result of checking preconditions of a given `ActionInstance` in the `ROState`
+        Returns result of checking preconditions of a given `ActionInstance` in the `State`
         and a list of the precondtions that are not fulfilled.
         """
-        events = self._simulator.get_events(instance.action, instance.actual_parameters)
-        assert len(events) == 1
-        self._simulator.is_applicable(events[0], state)
         unsatisfied = self._simulator.get_unsatisfied_conditions(
-            events[0], state, early_termination=False
+            state, instance.action, instance.actual_parameters, early_termination=False
         )
         return (len(unsatisfied) == 0, unsatisfied)
