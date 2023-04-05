@@ -168,6 +168,6 @@ class PlanDispatcher:
     def _default_dispatch_cb(action):
         # TODO Add condition evaluations
         parameters = action[1]["parameters"]
-        result = action[1]["executor"]()(*parameters)
+        result = action[1]["executor"](*parameters)
 
         return result
