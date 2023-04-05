@@ -1,4 +1,4 @@
-# Embedded Systesms Bridge
+# Embedded Systems Bridge
 
 General functionalities for using unified-planning in applications.
 
