@@ -134,14 +134,8 @@ def define_problem():
     mend_fuse.add_effect(EndTiming(), handsfree, True)
 
     problem = bridge.define_problem()
-    problem.set_initial_value(light, False)
-    problem.set_initial_value(handsfree, True)
-    problem.set_initial_value(match_used(m1), False)
-    problem.set_initial_value(match_used(m2), False)
-    problem.set_initial_value(match_used(m3), False)
-    problem.set_initial_value(fuse_mended(f1), False)
-    problem.set_initial_value(fuse_mended(f2), False)
-    problem.set_initial_value(fuse_mended(f3), False)
+    initial_values = {handsfree: True}
+    bridge.set_initial_values(problem, initial_values=initial_values)
     problem.add_goal(fuse_mended(f1))
     problem.add_goal(fuse_mended(f2))
     problem.add_goal(fuse_mended(f3))

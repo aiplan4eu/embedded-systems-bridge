@@ -24,13 +24,14 @@ import sys
 import typing
 from collections import OrderedDict
 from enum import Enum
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.model import (
     DurativeAction,
     Fluent,
+    FNode,
     InstantaneousAction,
     Object,
     Parameter,
@@ -303,31 +304,61 @@ class Bridge:
         problem.add_objects(self._objects.values() if objects is None else objects)
         return problem
 
-    def set_initial_values(self, problem: Problem) -> None:
+    def set_initial_values(
+        self, problem: Problem, initial_values: Dict[Fluent, Any] = None
+    ) -> None:
         """Set all initial values using the functions corresponding to this problem's fluents."""
         type_objects: Dict[type, List[Object]] = {}
+        initial_values: Dict[Fluent, Any] = {} if initial_values is None else initial_values
+
         # Collect objects in problem for all parameters of all fluents.
         for fluent in problem.fluents:
             for parameter in fluent.signature:
                 # Avoid redundancy.
-                if parameter.type not in type_objects.keys():
+                if parameter.type not in type_objects:
                     type_objects[parameter.type] = list(problem.objects(parameter.type))
+
+        # Setup provided fluents.
+        _fluents: Dict[FNode, Any] = {}
+        for fluent, value in initial_values.items():
+            if isinstance(fluent, Fluent):
+                for paramateres in itertools.product(
+                    *[type_objects[parameter.type] for parameter in fluent.signature]
+                ):
+                    _fluents[fluent(*paramateres)] = value
+            else:
+                _fluents[fluent] = value
+
         for fluent in problem.fluents:
             # Loop through all parameter value combinations.
             for parameters in itertools.product(
                 *[type_objects[parameter.type] for parameter in fluent.signature]
             ):
-                # Use the fluent function to calculate the initial values.
-                value = (
-                    self.get_object(
-                        self._fluent_functions[fluent.name](
-                            *[self._api_objects[parameter.name] for parameter in parameters]
-                        )
-                    )
-                    if fluent.name in self._api_function_names
-                    else self._fluent_functions[fluent.name](*parameters)
-                )
-                problem.set_initial_value(fluent(*parameters), value)
+                if fluent(*parameters) not in _fluents:
+                    # Chooses default value for fluent if it is not given.
+                    value = self._default_fluent_value(fluent)
+                    problem.set_initial_value(fluent(*parameters), value)
+                else:
+                    # Set initial value for fluent if it is given.
+                    problem.set_initial_value(fluent(*parameters), _fluents[fluent(*parameters)])
+
+    def _default_fluent_value(self, fluent: FNode) -> Any:
+        """Return default value for fluent."""
+
+        # TODO: Do we need to check if fluents are already available on api functions?
+
+        if fluent.type.is_bool_type():
+            return False
+        elif fluent.type.is_int_type():
+            return 0
+        elif fluent.type.is_real_type():
+            return 0.0
+        elif fluent.type.is_user_type():
+            raise ValueError(
+                f"Fluent {fluent} with user type cannot be initialized with a default value."
+            )
+
+        raise ValueError(f"Fluent {fluent} has unsupported type {fluent.type}.")
 
     @staticmethod
     def solve(

@@ -136,19 +136,12 @@ def define_problem():
     send_info.add_effect(info_sent(l), True)
 
     problem = bridge.define_problem()
-    problem.set_initial_value(is_surveyed(), False)
-    problem.set_initial_value(robot_at(l1), True)
-    problem.set_initial_value(robot_at(l2), False)
-    problem.set_initial_value(robot_at(l3), False)
-    problem.set_initial_value(robot_at(l4), False)
-    problem.set_initial_value(visited(l1), True)
-    problem.set_initial_value(visited(l2), False)
-    problem.set_initial_value(visited(l3), False)
-    problem.set_initial_value(visited(l4), False)
-    problem.set_initial_value(info_sent(l1), False)
-    problem.set_initial_value(info_sent(l2), False)
-    problem.set_initial_value(info_sent(l3), False)
-    problem.set_initial_value(info_sent(l4), False)
+    bridge.set_initial_values(problem)
+    initial_values = {
+        robot_at(l1): True,
+        visited(l1): True,
+    }
+    bridge.set_initial_values(problem, initial_values)
     problem.add_goal(visited(l2))
     problem.add_goal(visited(l3))
     problem.add_goal(visited(l4))

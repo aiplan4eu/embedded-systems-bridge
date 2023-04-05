@@ -87,14 +87,15 @@ def define_problem():
     move.add_effect(visited(l_to), True)
 
     problem = bridge.define_problem()
-    problem.set_initial_value(robot_at(l1), True)
-    problem.set_initial_value(robot_at(l2), False)
-    problem.set_initial_value(robot_at(l3), False)
-    problem.set_initial_value(robot_at(l4), False)
-    problem.set_initial_value(visited(l1), True)
-    problem.set_initial_value(visited(l2), False)
-    problem.set_initial_value(visited(l3), False)
-    problem.set_initial_value(visited(l4), False)
+    initial_values = {
+        robot_at(l1): True,
+        visited(l1): True,
+    }
+    bridge.set_initial_values(
+        problem,
+        initial_values=initial_values,
+    )  # Sets other fluents to respective default values
+
     problem.add_goal(visited(l2))
     problem.add_goal(visited(l3))
     problem.add_goal(visited(l4))
