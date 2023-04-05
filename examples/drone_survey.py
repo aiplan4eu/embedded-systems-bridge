@@ -19,8 +19,8 @@ localize some objects, take a closer inspection of the objects and then return t
 """
 from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
-from up_bridge.bridge import Bridge
-from up_bridge.components import UserTypeDefinition
+from up_esb.bridge import Bridge
+from up_esb.components import UserTypeDefinition
 
 
 class Location(UserTypeDefinition):

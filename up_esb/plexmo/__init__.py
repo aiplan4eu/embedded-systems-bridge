@@ -1,4 +1,4 @@
-# Copyright 2022 Selvakumar H S, LAAS-CNRS
+# Copyright 2022 Sebastian Stock, DFKI
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Useful components for UP Bridge."""
-from up_bridge.components.actions import ActionDefinition
-from up_bridge.components.user_types import UserTypeDefinition
 
-__all__ = ["ActionDefinition", "UserTypeDefinition"]
+"""Plexmo for UP Bridge."""
+from up_esb.plexmo.dispatcher import PlanDispatcher, SequentialPlanDispatcher
+from up_esb.plexmo.monitor import SequentialPlanMonitor
+
+__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor", "PlanDispatcher"]

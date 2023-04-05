@@ -18,7 +18,7 @@ from unified_planning.plans.plan import ActionInstance
 from unified_planning.plans.sequential_plan import SequentialPlan
 from unified_planning.test.examples import get_example_problems
 
-from up_bridge.plexmo.dispatcher import SequentialPlanDispatcher
+from up_esb.plexmo.dispatcher import SequentialPlanDispatcher
 
 # pylint: disable=all
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Examples for different ways to define actions on the application side and how to use the up_bridge
+Examples for different ways to define actions on the application side and how to use the up_esb
  to create UP representations from them.
 """
 from enum import Enum
@@ -10,7 +10,7 @@ import unified_planning as up
 from unified_planning.model import Problem
 from unified_planning.shortcuts import And, Not, OneshotPlanner
 
-from up_bridge import Bridge
+from up_esb import Bridge
 
 
 class Location(Enum):

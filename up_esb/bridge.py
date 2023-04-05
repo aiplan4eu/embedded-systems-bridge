@@ -47,7 +47,7 @@ from unified_planning.plans import (
 )
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
-from up_bridge.components.graph import plan_to_dependency_graph
+from up_esb.components.graph import plan_to_dependency_graph
 
 
 class Bridge:

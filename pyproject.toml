@@ -24,9 +24,9 @@ dependencies = [
   "pydot",
 ]
 description = "General functionalities for using unified-planning in applications"
-keywords = ["unified-planning", "unified-planning-bridge"]
+keywords = ["unified-planning", "embedded-systems-bridge"]
 license = {text = "Apache-2.0 License"}
-name = "up_bridge"
+name = "up_esb"
 readme = "README.md"
 requires-python = ">=3.8"
 version = "0.0.5"
@@ -71,7 +71,7 @@ ignore = [".tox", ".direnv", "python_venv", "env", "venv"]
 # pytest from the rootdir directory. Useful when all project tests are in a
 # known location to speed up test collection and to avoid picking up undesired
 # tests by accident.
-testpaths = ["up_bridge.tests"]
+testpaths = ["up_esb.tests"]
 
 # ------------------------------------------------------------------------------
 # Pylint Configurations
