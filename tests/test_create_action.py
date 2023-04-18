@@ -8,7 +8,7 @@ from typing import Optional
 
 import unified_planning as up
 from unified_planning.model import Problem
-from unified_planning.shortcuts import And, Not, OneshotPlanner
+from unified_planning.shortcuts import Not, OneshotPlanner
 
 from up_esb import Bridge
 
@@ -123,9 +123,8 @@ class ActionDefinitionsExample(Bridge):
         # self.move, (robot, location_from, location_to) = self.create_action_from_function(Robot.move) # pylint: disable=line-too-long
         # self.move, (robot, location_from, location_to) = self.create_action("move", callable=Robot.move, robot=Robot, location_from=Location, location_to=Location) # pylint: disable=line-too-long
         self.move.add_precondition(self.robot_at(robot, location_from))
-        self.move.add_precondition(
-            And(Not(self.robot_at(robot, location_to)) for robot in self.robots)
-        )
+        for check_robot in self.robots:
+            self.move.add_precondition(Not(self.robot_at(check_robot, location_to)))
         self.move.add_effect(self.robot_at(robot, location_from), False)
         self.move.add_effect(self.robot_at(robot, location_to), True)
 
@@ -140,7 +139,8 @@ class ActionDefinitionsExample(Bridge):
         # self.place, (robot, item, location) = self.create_action("place", callable=place_item_onto_robot, robot=Robot, item=Item, location=Location) # pylint: disable=line-too-long
         self.place.add_precondition(self.item_at(item, location))
         self.place.add_precondition(self.robot_at(robot, location))
-        self.place.add_precondition(And(Not(self.robot_has(robot, item)) for item in self.items))
+        for check_item in self.items:
+            self.place.add_precondition(Not(self.robot_has(check_robot, item)))
         self.place.add_effect(self.item_at(item, location), False)
         self.place.add_effect(self.robot_has(robot, item), True)
 
@@ -154,9 +154,8 @@ class ActionDefinitionsExample(Bridge):
         #     callable=PassItemAction(), robot_from=Robot, robot_to=Robot, item=Item)
         # As before, providing the callable PassItemAction() can be done later than at action declaration.
         self.pass_item.add_precondition(self.robot_has(robot_from, item))
-        self.pass_item.add_precondition(
-            And(Not(self.robot_has(robot_to, item)) for item in self.items)
-        )
+        for check_item in self.items:
+            self.pass_item.add_precondition(Not(self.robot_has(robot_to, check_item)))
         self.pass_item.add_effect(self.robot_has(robot_from, item), False)
         self.pass_item.add_effect(self.robot_has(robot_to, item), True)
 
