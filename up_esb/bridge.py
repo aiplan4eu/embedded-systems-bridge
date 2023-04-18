@@ -304,7 +304,13 @@ class Bridge:
         return problem
 
     def set_initial_values(self, problem: Problem) -> None:
-        """Set all initial values using the functions corresponding to this problem's fluents."""
+        """
+        Set all initial values using the functions corresponding to this problem's fluents.
+
+        Note: This will update all values for all parameter combinations for each fluent.
+         Its intended usage is to update the planning problem by the current system state
+         with one single function call.
+        """
         type_objects: Dict[type, List[Object]] = {}
         # Collect objects in problem for all parameters of all fluents.
         for fluent in problem.fluents:
