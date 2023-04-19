@@ -1,6 +1,6 @@
 # Embedded Systems Bridge
 
-This library proivdes general funcitonalities for using the [Unified Planning](https://github.com/aiplan4eu/unified-planning) library in robotic applications.
+This library provides general funcitonalities for using the [Unified Planning](https://github.com/aiplan4eu/unified-planning) library in robotic applications.
 
 
 ## Pre-commit Hooks
