@@ -479,6 +479,6 @@ class TestBridge:
                 raise Exception("No solution found")
 
             print("*** Result ***")
-            for action_instance in result.plan.timed_actions:
+            for action_instance in result.plan.actions:
                 print(action_instance)
             print("*** End of result ***")
