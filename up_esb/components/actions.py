@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Action representation for the UP project."""
-from typing import Callable
+from typing import Callable, Optional
 
 
 class ActionDefinition:
@@ -25,25 +25,33 @@ class ActionDefinition:
         self.preconditions = []
         self.effects = []
         self.duration = 0
-        self._execute_action: Callable = None
+        self._execute_action: Optional[Callable] = None
 
     def add_preconditions(self, preconditions):
+        """Add preconditions to the action."""
         self.preconditions = preconditions
 
     def add_effects(self, effects):
+        """Add effects to the action."""
         self.effects = effects
 
     def add_precondition(self, _callable: Callable, output=None, **kwargs):
+        """Add a precondition to the action."""
         self.preconditions.append((_callable, output, kwargs))
 
     def add_effect(self, _callable: Callable, output=None, **kwargs):
+        """Add an effect to the action."""
         self.effects.append((_callable, output, kwargs))
 
     def set_duration(self, duration):
+        """Set the duration of the action."""
         self.duration = duration
 
-    def _check_preconditions(self, preconditions=[]):
+    @staticmethod
+    def _check_preconditions(preconditions: Optional[list] = None):
         ret = False
+        preconditions = preconditions or []
+
         for condition in preconditions:
             precondition, value, args = condition
             assert (
@@ -53,8 +61,10 @@ class ActionDefinition:
             ret = True
         return ret
 
-    def _execute_effects(self, effects=[]):
+    @staticmethod
+    def _execute_effects(effects: Optional[list] = None):
         ret = False
+        effects = effects or []
         for effect in effects:
             eff, value, args = effect
             result = eff(expected_value=value, **args)
@@ -67,4 +77,8 @@ class ActionDefinition:
     def __call__(self, *args, **kwds):
         self._check_preconditions(self.preconditions)
         self._execute_effects(self.effects)
-        self._execute_action(*args, **kwds)
+
+        if self._execute_action:
+            self._execute_action(*args, **kwds)
+        else:
+            raise NotImplementedError("Action not implemented.")

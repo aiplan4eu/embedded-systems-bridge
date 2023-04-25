@@ -18,7 +18,7 @@ import pytest
 from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
 from up_esb.bridge import Bridge
-from up_esb.components import ActionDefinition, UserTypeDefinition
+from up_esb.components import ActionDefinition
 
 # pylint: disable=all
 ############################################################################################################
@@ -26,7 +26,7 @@ from up_esb.components import ActionDefinition, UserTypeDefinition
 ############################################################################################################
 
 
-class Location(UserTypeDefinition):
+class Location:
     def __init__(self, name, x, y, z, yaw):
         self.name = name
         self.x = x
@@ -38,7 +38,7 @@ class Location(UserTypeDefinition):
         return self.name
 
 
-class Area(UserTypeDefinition):
+class Area:
     def __init__(self, name, xmin, xmax, ymin, ymax, z, yaw):
         self.name = name
         self.xmin = xmin
@@ -363,7 +363,6 @@ class ProblemDeclaration(Application):
             [Bridge, Dict[str, Callable[..., object]]], Dict[str, Callable[..., object]]
         ],
     ):
-
         fluents = dec_fluents(bridge)
         objects = dec_objects(bridge)
         actions = dec_actions(bridge, fluents)
@@ -472,7 +471,7 @@ class TestBridge:
 
         problem = dec_problem(bridge, dec_fluents, dec_objects, dec_actions)
 
-        with OneshotPlanner(name="aries") as planner:
+        with OneshotPlanner(problem_kind=problem.kind) as planner:
             result = planner.solve(problem)
 
             if result is None:

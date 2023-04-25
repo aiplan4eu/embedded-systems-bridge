@@ -13,6 +13,5 @@
 # limitations under the License.
 """Useful components for UP Bridge."""
 from up_esb.components.actions import ActionDefinition
-from up_esb.components.user_types import UserTypeDefinition
 
-__all__ = ["ActionDefinition", "UserTypeDefinition"]
+__all__ = ["ActionDefinition"]

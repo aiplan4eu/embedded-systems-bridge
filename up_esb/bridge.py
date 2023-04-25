@@ -76,7 +76,7 @@ class Bridge:
     def create_types(self, api_types: Iterable[type]) -> None:
         """Create UP user types based on api_types."""
         for api_type in api_types:
-            assert api_type not in self._types.keys(), f"Type {api_type} already created!"
+            assert api_type not in self._types, f"Type {api_type} already created!"
             self._types[api_type] = UserType(api_type.__name__)
 
     def get_type(self, api_type: type) -> Type:
@@ -138,7 +138,7 @@ class Bridge:
         Optionally, provide a callable which calculates the fluent's values for problem
          initialization. Otherwise, you must set it later.
         """
-        assert name not in self._fluents.keys(), f"Fluent {name} already exists!"
+        assert name not in self._fluents, f"Fluent {name} already exists!"
         self._fluents[name] = Fluent(
             name,
             self.get_type(result_api_type)
@@ -178,7 +178,7 @@ class Bridge:
         """Set fluent functions. Their __name__ must match with fluent creation."""
         for function in functions:
             name = function.__name__
-            assert name not in self._fluent_functions.keys(), f"Fluent {name} already set!"
+            assert name not in self._fluent_functions, f"Fluent {name} already set!"
             self._fluent_functions[name] = function
             self.set_if_api_signature(name, function.__annotations__)
 
@@ -207,7 +207,7 @@ class Bridge:
         Return the InstantaneousAction with its parameters for convenient definition of its
          preconditions and effects in the UP domain.
         """
-        assert name not in self._actions.keys(), f"Action {name} already exists!"
+        assert name not in self._actions, f"Action {name} already exists!"
         # Combine signature with kwargs.
         if signature:
             kwargs = dict(signature, **kwargs)
@@ -250,14 +250,14 @@ class Bridge:
         """
         for function in functions:
             name = function.__name__
-            assert name not in self._api_actions.keys(), f"Action {name} already exists!"
+            assert name not in self._api_actions, f"Action {name} already exists!"
             self._api_actions[name] = function
 
     def get_executable_action(
         self, action: ActionInstance
     ) -> Tuple[Callable[..., object], List[object]]:
         """Return API callable and parameters corresponding to the given action."""
-        if action.action.name not in self._api_actions.keys():
+        if action.action.name not in self._api_actions:
             raise ValueError(f"No corresponding action defined for {action}!")
 
         return self._api_actions[action.action.name], [
@@ -266,7 +266,7 @@ class Bridge:
 
     def create_object(self, name: str, api_object: object) -> Object:
         """Create UP object with name based on api_object."""
-        assert name not in self._objects.keys(), f"Object {name} already exists!"
+        assert name not in self._objects, f"Object {name} already exists!"
         self._objects[name] = Object(name, self.get_object_type(api_object))
         self._api_objects[name] = api_object
         return self._objects[name]
@@ -287,7 +287,7 @@ class Bridge:
     def get_object(self, api_object: object) -> Object:
         """Return UP object corresponding to api_object if it exists, else api_object itself."""
         name = getattr(api_object, "name") if hasattr(api_object, "name") else str(api_object)
-        return self._objects[name] if name in self._objects.keys() else api_object
+        return self._objects[name] if name in self._objects else api_object
 
     def define_problem(
         self,
@@ -365,7 +365,7 @@ class Bridge:
             action_parameters = node[1]["parameters"]
             if action_instance in ["start", "end"]:
                 continue  # TODO: Handle start and end nodes.
-            if action_instance not in self._api_actions.keys():
+            if action_instance not in self._api_actions:
                 raise ValueError(f"Action {action_instance} not defined in API!")
             executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
 

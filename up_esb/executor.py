@@ -29,7 +29,7 @@ class Executor:
     def __init__(self):
         pass
 
-    def execute(self, graph: nx.DiGraph = None):
+    def execute(self, graph: nx.DiGraph):
         """Execute the graph."""
         result = None
         for node in graph.nodes(data=True):
