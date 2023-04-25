@@ -17,12 +17,16 @@
 # - Sebastian Stock, DFKI
 
 """Module to convert UP Plan to Dependency Graph and execute it."""
-from typing import Set, Union
+from typing import Optional, Set, Tuple, Union
 
 import networkx as nx
-from unified_planning.plans.partial_order_plan import PartialOrderPlan
-from unified_planning.plans.sequential_plan import SequentialPlan
-from unified_planning.plans.time_triggered_plan import TimeTriggeredPlan
+from unified_planning.plans import (
+    ActionInstance,
+    PartialOrderPlan,
+    SequentialPlan,
+    TimeTriggeredPlan,
+)
+from unified_planning.shortcuts import Fraction
 
 
 def plan_to_dependency_graph(
@@ -86,7 +90,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     parent = "start"
     dependency_graph.add_node(parent, action="start", parameters=())
 
-    next_parents: Set[tuple] = set()
+    next_parents: Set[Tuple[Fraction, ActionInstance, Optional[Fraction]]] = set()
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child = action.action.name
         duration = float(duration.numerator) / float(duration.denominator)
