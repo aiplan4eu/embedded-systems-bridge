@@ -146,7 +146,6 @@ class VerifyStationProblem(Application):
             print("All actions executed successfully")
 
     def get_problem(self):
-
         self.bridge.create_types([Location, Area])
 
         f_robot_at = self.bridge.create_fluent_from_function(self.robot_at)

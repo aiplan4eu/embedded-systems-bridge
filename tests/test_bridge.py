@@ -363,7 +363,6 @@ class ProblemDeclaration(Application):
             [Bridge, Dict[str, Callable[..., object]]], Dict[str, Callable[..., object]]
         ],
     ):
-
         fluents = dec_fluents(bridge)
         objects = dec_objects(bridge)
         actions = dec_actions(bridge, fluents)
@@ -472,7 +471,7 @@ class TestBridge:
 
         problem = dec_problem(bridge, dec_fluents, dec_objects, dec_actions)
 
-        with OneshotPlanner(name="aries") as planner:
+        with OneshotPlanner(problem_kind=problem.kind) as planner:
             result = planner.solve(problem)
 
             if result is None:

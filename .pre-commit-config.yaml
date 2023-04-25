@@ -1,19 +1,23 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
+    language_version:
+      python: $(python3 --version | cut -d' ' -f2)
+      pyproject_toml: ./pyproject.toml
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 23.3.0
     hooks:
       - id: black
         args: [--config=pyproject.toml]
   - repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v3.0.0a3
+    rev: v3.0.0a5
     hooks:
       - id: pylint
+        files: "up_bridge/.*\\.py$"
         args: [
             --rcfile=pyproject.toml,
             --fail-under=8.0,
@@ -22,8 +26,15 @@ repos:
             --disable=import-error, # TODO: Remove once local setup is fixed
           ]
   - repo: https://github.com/pycqa/isort
-    rev: 5.5.4
+    rev: 5.12.0
     hooks:
       - id: isort
         files: "\\.(py)$"
         args: [--settings-path=pyproject.toml]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.1.1" # Use the sha / tag you want to point at
+    hooks:
+      - id: mypy
+        files: "up_bridge/.*\\.py$"
+        args: [--ignore-missing-imports]

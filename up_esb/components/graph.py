@@ -17,7 +17,7 @@
 # - Sebastian Stock, DFKI
 
 """Module to convert UP Plan to Dependency Graph and execute it."""
-from typing import Union
+from typing import Set, Union
 
 import networkx as nx
 from unified_planning.plans.partial_order_plan import PartialOrderPlan
@@ -86,7 +86,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     parent = "start"
     dependency_graph.add_node(parent, action="start", parameters=())
 
-    next_parents = set()
+    next_parents: Set[tuple] = set()
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child = action.action.name
         duration = float(duration.numerator) / float(duration.denominator)
@@ -99,8 +99,8 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
             if start != next_start:
                 parent = child_name
                 for next_parent in next_parents:
-                    next_parent_name = f"{next_parent[1].action.name}{next_parent[1].actual_parameters}({next_parent[2]}s)"
-                    next_child_name = f"{next_action.action.name}{next_action.actual_parameters}({next_duration}s)"
+                    next_parent_name = f"{next_parent[1].action.name}{next_parent[1].actual_parameters}({next_parent[2]}s)"  # pylint: disable=line-too-long
+                    next_child_name = f"{next_action.action.name}{next_action.actual_parameters}({next_duration}s)"  # pylint: disable=line-too-long
                     dependency_graph.add_edge(
                         next_parent_name, next_child_name, weight=next_duration
                     )
