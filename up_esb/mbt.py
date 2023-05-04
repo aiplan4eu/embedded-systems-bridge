@@ -31,12 +31,15 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 
 """
-A generic behavior tree implementation which executes one action per call.
- Basically you can modify the tree between calls, e.g., to refine an action at runtime.
+A generic behavior tree implementation which executes one action (of type T) per call.
+ Type T can be an abstract representation because each action is passed to the
+ get_executable_action() method first before its executable representation is called.
+ The behavior tree itself is mutable since you can modify it between calls, e.g.,
+ to refine further actions at runtime depending on previous results.
 """
 
 
-from typing import Callable, Generic, List, Optional, Tuple, TypeVar
+from typing import Callable, Generic, List, Tuple, TypeVar
 
 T = TypeVar("T")
 
@@ -45,47 +48,45 @@ class Node(Generic[T]):
     def __init__(
         self,
         tree: "MutableBehaviorTree",
+        actions: List[T],
         action_success_function: Callable[..., bool],
-        is_done_on_success: bool,
+        action_continuation_function: Callable[..., bool],
     ) -> None:
         self.tree = tree
+        self.actions = list(actions)
         self.action_success_function = action_success_function
-        self.is_done_on_success = is_done_on_success
+        self.action_continuation_function = action_continuation_function
         self.subnodes: List[Node] = []
-        self.actions: List[T] = []
 
     def get_next_action(self) -> T:
-        """Return the next action from this node or its subnodes."""
-        if self.actions:
-            return self.actions[0]
-
+        """Return the next action from this node's subnodes or itself."""
         if self.subnodes:
             return self.subnodes[0].get_next_action()
+
+        if self.actions:
+            return self.actions[0]
 
         raise RuntimeError("Cannot determine next action.")
 
     def execute_action(self) -> bool:
         """Execute the next of this node's actions."""
-        # Get next executable action and parameters from bridge.
+        # Get next executable action and parameters from tree.
         executable_action, parameters = self.tree.get_executable_action(self.actions.pop(0))
         # Execute action and store its result.
         result = executable_action(*parameters)
         self.tree.action_result = result
         # Determine the action's success based on the action_success_function, and return this.
         is_success = self.action_success_function(result)
-        if is_success and self.is_done_on_success:
+        if not self.action_continuation_function(result):
             self.subnodes.clear()
             self.actions.clear()
         return is_success
 
     def execute(self) -> bool:
         """
-        Execute the next action from this node or its subnodes.
+        Execute the next action from this node's subnodes or itself.
         Return whether it was sucessful, determined by the action_success_function.
         """
-        if self.actions:
-            return self.execute_action()
-
         if self.subnodes:
             node = self.subnodes[0]
             is_success = node.execute()
@@ -93,12 +94,15 @@ class Node(Generic[T]):
                 self.subnodes.pop(0)
             return is_success
 
-        return False
+        if self.actions:
+            return self.execute_action()
+
+        return True
 
 
 class MutableBehaviorTree(Generic[T]):
     def __init__(self) -> None:
-        self.root: Optional[Node[T]] = None
+        self.root = Node[T](self, [], lambda: False, lambda: False)
         self.active = True
         self.total_failure_count = 0
         self._action_result: object = None
@@ -111,39 +115,78 @@ class MutableBehaviorTree(Generic[T]):
     def action_result(self, value: object) -> None:
         self._action_result = value
 
-    def set_action_sequence(
+    def set_actions(
         self,
         actions: List[T],
         action_success_function: Callable[..., bool] = lambda result: bool(result),
+        action_continuation_function: Callable[..., bool] = lambda result: bool(result),
     ) -> None:
         """
-        Update this behavior tree by a sequence of actions. Whether an action is
-         considered successful, is determined by the action_success_function.
+        Set this behavior tree to execute actions, one per execute() call.
+         Whether an action is considered successful, is determined by the action_success_function.
+         Whether it should continue with the following actions, is determined by the
+         action_continuation_function.
         """
-        self.root = Node[T](self, action_success_function, False)
-        self.root.actions = list(actions)
+        self.root.subnodes.clear()
+        self.append_actions(actions, action_success_function, action_continuation_function)
+
+    def prepend_actions(
+        self,
+        actions: List[T],
+        action_success_function: Callable[..., bool] = lambda result: bool(result),
+        action_continuation_function: Callable[..., bool] = lambda result: bool(result),
+    ) -> None:
+        """
+        Prepend execution of actions before all other of this behavior tree, one per execute() call.
+         Whether an action is considered successful, is determined by the action_success_function.
+         Whether it should continue with the following actions, is determined by the
+         action_continuation_function.
+        """
+        node = self.root
+        while node.subnodes:
+            node = node.subnodes[0]
+        node.subnodes.append(
+            Node[T](self, actions, action_success_function, action_continuation_function)
+        )
+        self.active = True
+
+    def append_actions(
+        self,
+        actions: List[T],
+        action_success_function: Callable[..., bool] = lambda result: bool(result),
+        action_continuation_function: Callable[..., bool] = lambda result: bool(result),
+    ) -> None:
+        """
+        Append execution of actions after all other of this behavior tree, one per execute() call.
+         Whether an action is considered successful, is determined by the action_success_function.
+         Whether it should continue with the following actions, is determined by the
+         action_continuation_function.
+        """
+        self.root.subnodes.append(
+            Node[T](self, actions, action_success_function, action_continuation_function)
+        )
         self.active = True
 
     def has_next_action(self) -> bool:
         """Return whether this behavior tree has a next action."""
-        return self.root and (self.root.actions or self.root.subnodes)
+        return bool(self.root.subnodes)
 
     def get_next_action(self) -> T:
         """Return the next action of this behavior tree."""
-        assert self.root, "Behavior Tree has no actions."
         return self.root.get_next_action()
 
     def execute(self) -> bool:
         """
         Execute the next action of this behavior tree.
-        Afterwards, remove completed and obsolete actions.
+         Afterwards, remove completed and obsolete actions.
         """
         is_success = self.root.execute()
-        # Update whether there is at least one more action after the current one.
-        self.active = self.has_next_action()
         # Count failures.
         if not is_success:
             self.total_failure_count += 1
+        # Determine whether this tree's actions were successfully completed.
+        elif not self.has_next_action():
+            self.active = False
         return is_success
 
     def get_last_action_result(self) -> object:
