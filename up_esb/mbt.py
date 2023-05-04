@@ -39,7 +39,7 @@ A generic behavior tree implementation which executes one action (of type T) per
 """
 
 
-from typing import Callable, Generic, List, Tuple, TypeVar
+from typing import Callable, Generic, List, Optional, Tuple, TypeVar
 
 T = TypeVar("T")
 
@@ -104,7 +104,7 @@ class MutableBehaviorTree(Generic[T]):
     def __init__(self) -> None:
         self.root = Node[T](self, [], lambda: False, lambda: False)
         self.active = True
-        self.total_failure_count = 0
+        self.failure_count = 0
         self._action_result: object = None
 
     @property
@@ -117,7 +117,7 @@ class MutableBehaviorTree(Generic[T]):
 
     def set_actions(
         self,
-        actions: List[T],
+        actions: Optional[List[T]],
         action_success_function: Callable[..., bool] = lambda result: bool(result),
         action_continuation_function: Callable[..., bool] = lambda result: bool(result),
     ) -> None:
@@ -132,7 +132,7 @@ class MutableBehaviorTree(Generic[T]):
 
     def prepend_actions(
         self,
-        actions: List[T],
+        actions: Optional[List[T]],
         action_success_function: Callable[..., bool] = lambda result: bool(result),
         action_continuation_function: Callable[..., bool] = lambda result: bool(result),
     ) -> None:
@@ -142,17 +142,18 @@ class MutableBehaviorTree(Generic[T]):
          Whether it should continue with the following actions, is determined by the
          action_continuation_function.
         """
-        node = self.root
-        while node.subnodes:
-            node = node.subnodes[0]
-        node.subnodes.append(
-            Node[T](self, actions, action_success_function, action_continuation_function)
-        )
-        self.active = True
+        if actions:
+            node = self.root
+            while node.subnodes:
+                node = node.subnodes[0]
+            node.subnodes.append(
+                Node[T](self, actions, action_success_function, action_continuation_function)
+            )
+        self.active = bool(actions)
 
     def append_actions(
         self,
-        actions: List[T],
+        actions: Optional[List[T]],
         action_success_function: Callable[..., bool] = lambda result: bool(result),
         action_continuation_function: Callable[..., bool] = lambda result: bool(result),
     ) -> None:
@@ -162,10 +163,11 @@ class MutableBehaviorTree(Generic[T]):
          Whether it should continue with the following actions, is determined by the
          action_continuation_function.
         """
-        self.root.subnodes.append(
-            Node[T](self, actions, action_success_function, action_continuation_function)
-        )
-        self.active = True
+        if actions:
+            self.root.subnodes.append(
+                Node[T](self, actions, action_success_function, action_continuation_function)
+            )
+        self.active = bool(actions)
 
     def has_next_action(self) -> bool:
         """Return whether this behavior tree has a next action."""
@@ -183,7 +185,7 @@ class MutableBehaviorTree(Generic[T]):
         is_success = self.root.execute()
         # Count failures.
         if not is_success:
-            self.total_failure_count += 1
+            self.failure_count += 1
         # Determine whether this tree's actions were successfully completed.
         elif not self.has_next_action():
             self.active = False
