@@ -17,8 +17,7 @@ import unittest
 import unified_planning as up
 from unified_planning.plans import SequentialPlan, TimeTriggeredPlan
 from unified_planning.plans.partial_order_plan import PartialOrderPlan
-from unified_planning.shortcuts import *
-from unified_planning.shortcuts import PlanKind
+from unified_planning.shortcuts import *  # pylint: disable=unused-wildcard-import
 from unified_planning.test.examples import get_example_problems
 from unified_planning.test.examples.realistic import get_example_problems
 
@@ -34,21 +33,16 @@ class TestPartialOrderPlanGeneration(unittest.TestCase):
         pop = plan.convert_to(PlanKind.PARTIAL_ORDER_PLAN, problem)
         assert isinstance(pop, PartialOrderPlan)
         dep_graph = plan_to_dependency_graph(pop)
-        self.assertTrue(dep_graph.has_node("start"))
-        self.assertTrue(dep_graph.has_node("end"))
-        node0_name = f"{plan.actions[0].action.name}{plan.actions[0].actual_parameters}"
-        node1_name = f"{plan.actions[1].action.name}{plan.actions[1].actual_parameters}"
-        self.assertTrue(dep_graph.has_edge("start", node0_name))
-        self.assertTrue(dep_graph.has_edge("start", node1_name))
-        self.assertTrue(dep_graph.has_edge(node0_name, "end"))
-        self.assertTrue(dep_graph.has_edge(node1_name, "end"))
+        actions = [str(action) for action in plan.actions] + ["start", "end"]
+        for node in dep_graph.nodes(data=True):
+            self.assertTrue(node[1]["node_name"] in actions)
 
 
 class TestSequentialPlanTranslation(unittest.TestCase):
     def test_simple_translation(self):
         problems = get_example_problems()
 
-        for (_, plan) in problems.values():
+        for _, plan in problems.values():
             if isinstance(plan, SequentialPlan):
                 dep_graph = plan_to_dependency_graph(plan)
                 actions = [str(action) for action in plan.actions]
@@ -98,7 +92,7 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
     def test_simple_translation(self):
         problems = get_example_problems()
 
-        for (_, plan) in problems.values():
+        for _, plan in problems.values():
             if isinstance(plan, TimeTriggeredPlan):
                 dep_graph = plan_to_dependency_graph(plan)
                 actions = [str(action) for _, action, _ in plan.timed_actions]
@@ -149,8 +143,8 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
                 mid_location,
             ),
         )
-        dur_move.add_effect(StartTiming(1), is_at(l_from), False)
-        dur_move.add_effect(EndTiming(5), is_at(l_to), True)
+        dur_move.add_effect(StartTiming("1"), is_at(l_from), False)
+        dur_move.add_effect(EndTiming("5"), is_at(l_to), True)
         l1 = Object("l1", Location)
         l2 = Object("l2", Location)
         l3 = Object("l3", Location)
@@ -171,6 +165,11 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
                 ),
                 (
                     Fraction(202, 100),
+                    up.plans.ActionInstance(dur_move, (ObjectExp(l5), ObjectExp(l3))),
+                    Fraction(1, 1),
+                ),
+                (
+                    Fraction(303, 100),
                     up.plans.ActionInstance(dur_move, (ObjectExp(l3), ObjectExp(l5))),
                     Fraction(1, 1),
                 ),
@@ -190,12 +189,10 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
 
     def test_all(self):
         self.test_simple_translation()
-        # self.test_special_cases() # TODO: fix duplicate nodes
+        self.test_special_cases()
 
 
 if __name__ == "__main__":
-    # test = TestPartialOrderPlanGeneration()
-    # test.test_partial_order_plan_to_dependency_graph()
-
+    TestPartialOrderPlanGeneration().test_partial_order_plan_to_dependency_graph()
     TestSequentialPlanTranslation().test_all()
     TestTimeTriggeredPlanTrasnslation().test_all()
