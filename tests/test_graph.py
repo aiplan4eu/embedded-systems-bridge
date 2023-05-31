@@ -177,15 +177,14 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
         )
 
         dep_graph = plan_to_dependency_graph(plan)
-        actions = [str(action) for _, action, _ in plan.timed_actions]
-        actions.extend(["start", "end"])
+        actions = [str(action) for _, action, _ in plan.timed_actions] + ["start", "end"]
         for node in dep_graph.nodes(data=True):
             node_name = node[1]["node_name"]
             if node_name not in ["start", "end"]:
                 node_name = node[1]["node_name"].split(")")[0] + ")"
             self.assertTrue(node_name in actions)
 
-        self.assertEqual(len(dep_graph.nodes()), 5)
+        self.assertEqual(len(dep_graph.nodes()), 6)
 
     def test_all(self):
         self.test_simple_translation()

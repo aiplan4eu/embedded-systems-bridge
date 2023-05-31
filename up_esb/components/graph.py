@@ -17,7 +17,7 @@
 # - Sebastian Stock, DFKI
 
 """Module to convert UP Plan to Dependency Graph and execute it."""
-from typing import Union
+from typing import Optional, Set, Tuple, Union
 
 import networkx as nx
 from unified_planning.plans import (
@@ -109,9 +109,10 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     """Convert UP Time Triggered Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
-    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
-
     next_parents: Set[Tuple[Fraction, ActionInstance, Optional[Fraction]]] = set()
+
+    # Add all nodes
+    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
         duration = float(duration.numerator) / float(duration.denominator)
@@ -121,7 +122,15 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
             action=action.action.name,
             parameters=action.actual_parameters,
         )
-        dependency_graph.add_edge(parent_id, child_id, weight=duration)
+
+    dependency_graph.add_node(
+        len(plan.timed_actions) + 1, node_name="end", action="end", parameters=()
+    )
+
+    # Add all edges and durations
+    for i, (start, action, duration) in enumerate(plan.timed_actions):
+        child_id = i + 1
+        dependency_graph.add_edge(parent_id, child_id)
         if i + 1 < len(plan.timed_actions):
             next_start, next_action, next_duration = plan.timed_actions[i + 1]
             next_duration = float(next_duration.numerator) / float(next_duration.denominator)
@@ -131,9 +140,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
                     next_child_name = f"{str(next_action)}({next_duration}s)"
 
                     next_parent_id = next_parent[0]
-                    next_child_id = _get_node_id(
-                        dependency_graph, next_child_name
-                    )  # TODO: picks previously available node name
+                    next_child_id = _get_node_id(dependency_graph, next_child_name)
                     if next_child_id is None:
                         next_child_id = child_id + 1
                         dependency_graph.add_node(
@@ -142,13 +149,15 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
                             action=next_action.action.name,
                             parameters=next_action.actual_parameters,
                         )
-                    dependency_graph.add_edge(next_parent_id, next_child_id, weight=next_duration)
+                    dependency_graph.add_edge(next_parent_id, next_child_id)
                 next_parents = set()
             else:
                 next_parents.add((child_id, start, action, duration))
 
-    dependency_graph.add_node(parent_id + 1, node_name="end", action="end", parameters=())
-    dependency_graph.add_edge(parent_id, parent_id + 1)
+    # Link last nodes to end node
+    # TODO: this is a hack, because the last node is not linked to the end node
+    # May create a problem if there are multiple nodes at the same time
+    dependency_graph.add_edge(len(plan.timed_actions), len(plan.timed_actions) + 1)
     return dependency_graph
 
 
