@@ -33,6 +33,8 @@ class TestPartialOrderPlanGeneration(unittest.TestCase):
         pop = plan.convert_to(PlanKind.PARTIAL_ORDER_PLAN, problem)
         assert isinstance(pop, PartialOrderPlan)
         dep_graph = plan_to_dependency_graph(pop)
+
+        # Partial Orders are not ordered in the graph. Therefore, we can only check if all actions are in the graph
         actions = [str(action) for action in plan.actions] + ["start", "end"]
         for node in dep_graph.nodes(data=True):
             self.assertTrue(node[1]["node_name"] in actions)
@@ -45,10 +47,13 @@ class TestSequentialPlanTranslation(unittest.TestCase):
         for _, plan in problems.values():
             if isinstance(plan, SequentialPlan):
                 dep_graph = plan_to_dependency_graph(plan)
-                actions = [str(action) for action in plan.actions]
-                actions.extend(["start", "end"])
+                actions = ["start"] + [str(action) for action in plan.actions] + ["end"]
+                graph_actions = []
                 for node in dep_graph.nodes(data=True):
-                    self.assertTrue(node[1]["node_name"] in actions)
+                    graph_actions.append(node[1]["node_name"])
+
+                # Check if all actions are ordered correctly
+                self.assertEqual(actions, graph_actions)
 
     def test_special_cases(self):
         """Test translation for special cases."""
@@ -76,11 +81,12 @@ class TestSequentialPlanTranslation(unittest.TestCase):
         )
 
         dep_graph = plan_to_dependency_graph(plan)
-        actions = [str(action) for action in plan.actions]
-        actions.extend(["start", "end"])
+        actions = ["start"] + [str(action) for action in plan.actions] + ["end"]
+        graph_actions = []
         for node in dep_graph.nodes(data=True):
-            self.assertTrue(node[1]["node_name"] in actions)
+            graph_actions.append(node[1]["node_name"])
 
+        self.assertEqual(actions, graph_actions)
         self.assertEqual(len(dep_graph.nodes()), 4)
 
     def test_all(self):
@@ -95,13 +101,15 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
         for _, plan in problems.values():
             if isinstance(plan, TimeTriggeredPlan):
                 dep_graph = plan_to_dependency_graph(plan)
-                actions = [str(action) for _, action, _ in plan.timed_actions]
-                actions.extend(["start", "end"])
+                actions = ["start"] + [str(action) for _, action, _ in plan.timed_actions] + ["end"]
+                graph_actions = []
                 for node in dep_graph.nodes(data=True):
                     node_name = node[1]["node_name"]
                     if node_name not in ["start", "end"]:
                         node_name = node[1]["node_name"].split(")")[0] + ")"
-                    self.assertTrue(node_name in actions)
+                    graph_actions.append(node_name)
+
+                self.assertEqual(actions, graph_actions)
 
     def test_special_cases(self):
         Location = UserType("Location")
@@ -177,13 +185,15 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
         )
 
         dep_graph = plan_to_dependency_graph(plan)
-        actions = [str(action) for _, action, _ in plan.timed_actions] + ["start", "end"]
+        actions = ["start"] + [str(action) for _, action, _ in plan.timed_actions] + ["end"]
+        graph_actions = []
         for node in dep_graph.nodes(data=True):
             node_name = node[1]["node_name"]
             if node_name not in ["start", "end"]:
                 node_name = node[1]["node_name"].split(")")[0] + ")"
-            self.assertTrue(node_name in actions)
+            graph_actions.append(node_name)
 
+        self.assertEqual(actions, graph_actions)
         self.assertEqual(len(dep_graph.nodes()), 6)
 
     def test_all(self):
