@@ -31,7 +31,7 @@ jobs:
         run: python3 -m mypy up_esb/ --config-file pyproject.toml --ignore-missing-imports
 
       - name: Check code quality with Pylint
-        run: python3 -m pylint up_esb/ --rcfile pyproject.toml
+        run: python3 -m pylint up_esb/ --rcfile pyproject.toml --fail-under=8.0
 
       - name: Check imports with isort
         run: python3 -m isort --check-only . --settings-path pyproject.toml
