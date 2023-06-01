@@ -78,7 +78,7 @@ class ActionDefinition:
         self._check_preconditions(self.preconditions)
         self._execute_effects(self.effects)
 
-        if self._execute_action:
+        if self._execute_action is not None:
             self._execute_action(*args, **kwds)
         else:
             raise NotImplementedError("Action not implemented.")

@@ -1,0 +1,40 @@
+name: Main Workflow
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      - name: Install repository
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e .
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install black mypy pylint isort pytest
+
+      - name: Check formatting with Black
+        run: python3 -m black --check . --config pyproject.toml
+
+      - name: Check types with MyPy
+        run: python3 -m mypy up_esb/ --config-file pyproject.toml --ignore-missing-imports
+
+      - name: Check code quality with Pylint
+        run: python3 -m pylint up_esb/ --rcfile pyproject.toml --fail-under=8.0
+
+      - name: Check imports with isort
+        run: python3 -m isort --check-only . --settings-path pyproject.toml
+
+      - name: Run tests with pytest
+        run: python3 -m pytest -v tests/

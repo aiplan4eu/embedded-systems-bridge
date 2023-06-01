@@ -316,7 +316,7 @@ class Bridge:
         for fluent in problem.fluents:
             for parameter in fluent.signature:
                 # Avoid redundancy.
-                if parameter.type not in type_objects.keys():
+                if parameter.type not in type_objects:
                     type_objects[parameter.type] = list(problem.objects(parameter.type))
         for fluent in problem.fluents:
             # Loop through all parameter value combinations.
