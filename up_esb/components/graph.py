@@ -109,7 +109,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     """Convert UP Time Triggered Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
-    next_parents: Set[Tuple[Fraction, ActionInstance, Optional[Fraction]]] = set()
+    next_parents: Set[Tuple[int, Fraction, ActionInstance, Optional[Fraction]]] = set()
 
     # Add all nodes
     dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
@@ -161,8 +161,10 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     return dependency_graph
 
 
-def _get_node_id(dependency_graph: nx.DiGraph, name: str) -> str:
+def _get_node_id(dependency_graph: nx.DiGraph, name: str) -> Optional[int]:
     """Get the UUID for the node"""
     for node in dependency_graph.nodes(data=True):
         if node[1]["node_name"] == name:
             return node[0]
+
+    return None
