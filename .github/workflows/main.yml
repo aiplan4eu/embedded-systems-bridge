@@ -28,7 +28,7 @@ jobs:
         run: python3 -m black --check . --config pyproject.toml
 
       - name: Check types with MyPy
-        run: python3 -m mypy up_esb/ --config-file pyproject.toml
+        run: python3 -m mypy up_esb/ --config-file pyproject.toml --ignore-missing-imports
 
       - name: Check code quality with Pylint
         run: python3 -m pylint up_esb/ --rcfile pyproject.toml
