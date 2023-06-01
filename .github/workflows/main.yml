@@ -14,6 +14,11 @@ jobs:
         with:
           python-version: "3.8"
 
+      - name: Install repository
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e .
+
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
