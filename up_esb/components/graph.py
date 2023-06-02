@@ -45,74 +45,126 @@ def plan_to_dependency_graph(
 def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGraph:
     """Convert UP Partial Order Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    dependency_graph.add_node("end", action="end", parameters=())
+
+    # Prepare Node IDs
+    nodes = set()
+    node_map = {}
     for action, successors in plan.get_adjacency_list.items():
-        action_name = action.action.name
-        params = action.actual_parameters
-        node_name = f"{action_name}{params}"
-        dependency_graph.add_node(node_name, action=action_name, parameters=params)
+        nodes.add(action)
+        for succ in successors:
+            nodes.add(succ)
+    nodes.add("start")
+    nodes.add("end")
+
+    for i, node in enumerate(nodes):
+        node_map[node] = i
+
+    dependency_graph.add_node(node_map["end"], node_name="end", action="end", parameters=())
+    for action, successors in plan.get_adjacency_list.items():
+        dependency_graph.add_node(
+            node_map[action],
+            node_name=str(action),
+            action=action.action.name,
+            parameters=action.actual_parameters,
+        )
         # add edges to successors
         for succ in successors:
-            succ_node_name = f"{succ.action.name}{succ.actual_parameters}"
-            dependency_graph.add_edge(node_name, succ_node_name)
+            dependency_graph.add_edge(node_map[action], node_map[succ])
         # add end node and edges from nodes without successors
         if len(successors) == 0:
-            dependency_graph.add_edge(node_name, "end")
+            dependency_graph.add_edge(node_map[action], node_map["end"])
 
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
-    dependency_graph.add_node("start", action="start", parameters=())
+    dependency_graph.add_node(node_map["start"], node_name="start", action="start", parameters=())
     for node in start_nodes:
-        dependency_graph.add_edge("start", node)
+        dependency_graph.add_edge(node_map["start"], node)
+
     return dependency_graph
 
 
 def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
-    """Convert UP Plan to Dependency Graph."""
+    """Convert UP Sequential Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    edge = "start"
-    dependency_graph.add_node(edge, action="start", parameters=())
-    for action in plan.actions:
-        child = action.action.name
-        child_name = f"{child}{action.actual_parameters}"
-        dependency_graph.add_node(child_name, action=child, parameters=action.actual_parameters)
-        dependency_graph.add_edge(edge, child_name)
-        edge = child_name
+    parent_id = 0
+    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
+    for i, action in enumerate(plan.actions):
+        child_id = i + 1
+        dependency_graph.add_node(
+            child_id,
+            node_name=str(action),
+            action=action.action.name,
+            parameters=action.actual_parameters,
+        )
+        dependency_graph.add_edge(parent_id, child_id)
+        parent_id = child_id
 
-    dependency_graph.add_node("end", action="end", parameters=())
-    dependency_graph.add_edge(edge, "end")
+    child_id = parent_id + 1  # End node
+    dependency_graph.add_node(child_id, node_name="end", action="end", parameters=())
+    dependency_graph.add_edge(parent_id, child_id)
     return dependency_graph
 
 
 def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGraph:
-    """Convert UP Plan to Dependency Graph."""
+    """Convert UP Time Triggered Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
-    parent = "start"
-    dependency_graph.add_node(parent, action="start", parameters=())
+    parent_id = 0
+    next_parents: Set[Tuple[int, Fraction, ActionInstance, Optional[Fraction]]] = set()
 
-    next_parents: Set[Tuple[Fraction, ActionInstance, Optional[Fraction]]] = set()
+    # Add all nodes
+    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
     for i, (start, action, duration) in enumerate(plan.timed_actions):
-        child = action.action.name
+        child_id = i + 1
         duration = float(duration.numerator) / float(duration.denominator)
-        child_name = f"{child}{action.actual_parameters}({duration}s)"
-        dependency_graph.add_node(child_name, action=child, parameters=action.actual_parameters)
-        dependency_graph.add_edge(parent, child_name, weight=duration)
+        dependency_graph.add_node(
+            child_id,
+            node_name=f"{str(action)}({duration})",
+            action=action.action.name,
+            parameters=action.actual_parameters,
+        )
+
+    dependency_graph.add_node(
+        len(plan.timed_actions) + 1, node_name="end", action="end", parameters=()
+    )
+
+    # Add all edges and durations
+    for i, (start, action, duration) in enumerate(plan.timed_actions):
+        child_id = i + 1
+        dependency_graph.add_edge(parent_id, child_id)
         if i + 1 < len(plan.timed_actions):
             next_start, next_action, next_duration = plan.timed_actions[i + 1]
             next_duration = float(next_duration.numerator) / float(next_duration.denominator)
             if start != next_start:
-                parent = child_name
+                parent_id = child_id
                 for next_parent in next_parents:
-                    next_parent_name = f"{next_parent[1].action.name}{next_parent[1].actual_parameters}({next_parent[2]}s)"  # pylint: disable=line-too-long
-                    next_child_name = f"{next_action.action.name}{next_action.actual_parameters}({next_duration}s)"  # pylint: disable=line-too-long
-                    dependency_graph.add_edge(
-                        next_parent_name, next_child_name, weight=next_duration
-                    )
+                    next_child_name = f"{str(next_action)}({next_duration}s)"
+
+                    next_parent_id = next_parent[0]
+                    next_child_id = _get_node_id(dependency_graph, next_child_name)
+                    if next_child_id is None:
+                        next_child_id = child_id + 1
+                        dependency_graph.add_node(
+                            next_child_id,
+                            node_name=next_child_name,
+                            action=next_action.action.name,
+                            parameters=next_action.actual_parameters,
+                        )
+                    dependency_graph.add_edge(next_parent_id, next_child_id)
                 next_parents = set()
             else:
-                next_parents.add((start, action, duration))
+                next_parents.add((child_id, start, action, duration))
 
-    # FIXME: End Node is conflicting with parent node
-    # dependency_graph.add_node("end", action="end", parameters=())
-    # dependency_graph.add_edge(parent, "end")
+    # Link last nodes to end node
+    # TODO: this is a hack, because the last node is not linked to the end node
+    # May create a problem if there are multiple nodes at the same time
+    dependency_graph.add_edge(len(plan.timed_actions), len(plan.timed_actions) + 1)
     return dependency_graph
+
+
+def _get_node_id(dependency_graph: nx.DiGraph, name: str) -> Optional[int]:
+    """Get the UUID for the node"""
+    for node in dependency_graph.nodes(data=True):
+        if node[1]["node_name"] == name:
+            return node[0]
+
+    return None

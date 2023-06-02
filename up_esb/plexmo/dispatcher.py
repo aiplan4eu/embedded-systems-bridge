@@ -106,7 +106,7 @@ class PlanDispatcher:
         replanned = False
         last_failed_action = None
         for node in self._graph.nodes(data=True):
-            if node[0] in ["start", "end"]:
+            if node[1]["node_name"] in ["start", "end"]:
                 continue  # skip start and end node
             successors = list(self._graph.successors(node[0]))
             if len(successors) > 1 and self._status != "failure":  # Assume as single action

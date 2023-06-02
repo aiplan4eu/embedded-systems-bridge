@@ -33,7 +33,7 @@ class Executor:
         """Execute the graph."""
         result = None
         for node in graph.nodes(data=True):
-            if node[0] in ["start", "end"]:
+            if node[1]["node_name"] in ["start", "end"]:
                 continue
             successors = list(graph.successors(node[0]))
             if len(successors) > 1:
