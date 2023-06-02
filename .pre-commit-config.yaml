@@ -17,13 +17,13 @@ repos:
     rev: v3.0.0a5
     hooks:
       - id: pylint
-        files: "up_bridge/.*\\.py$"
+        files: "up_esb/.*\\.py$"
         args: [
             --rcfile=pyproject.toml,
             --fail-under=8.0,
             --jobs=0,
             --output-format=colorized,
-            --disable=import-error, # TODO: Remove once local setup is fixed
+            --disable=import-error,
           ]
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
@@ -33,8 +33,8 @@ repos:
         args: [--settings-path=pyproject.toml]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.1.1" # Use the sha / tag you want to point at
+    rev: "v1.3.0" # Use the sha / tag you want to point at
     hooks:
       - id: mypy
-        files: "up_bridge/.*\\.py$"
+        files: "up_esb/.*\\.py$"
         args: [--ignore-missing-imports]
