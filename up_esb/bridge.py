@@ -48,6 +48,7 @@ from unified_planning.plans import (
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
 from up_esb.components.graph import plan_to_dependency_graph
+from up_esb.components.up_utils import map_effect_value
 
 
 class Bridge:
@@ -361,13 +362,13 @@ class Bridge:
 
         for node in executable_graph.nodes(data=True):
             node_id = node[0]
-            action_instance = node[1]["action"]
+            action = node[1]["action"]
             action_parameters = node[1]["parameters"]
-            if action_instance in ["start", "end"]:
+            if action in ["start", "end"]:
                 continue  # TODO: Handle start and end nodes.
-            if action_instance not in self._api_actions:
-                raise ValueError(f"Action {action_instance} not defined in API!")
-            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
+            if action not in self._api_actions:
+                raise ValueError(f"Action {action} not defined in API!")
+            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action)]
 
             # Parameters
             parameters = []
@@ -377,5 +378,30 @@ class Bridge:
                     raise ValueError(f"Object {param} not defined in API!")
                 parameters.append(self._api_objects[str(param)])
             executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
+
+            # Action Preconditions
+            executable_preconditions = []
+            for precondition in executable_graph.nodes[node_id]["preconditions"]:
+                pred_name = precondition.fluent().name
+                if str(pred_name) not in self._fluent_functions:
+                    raise ValueError(
+                        f"Fluent {pred_name} not defined in API! "
+                        f"Please add it to the API before proceeding."
+                    )
+                executable_preconditions.append(self._fluent_functions[pred_name])
+            executable_graph.nodes[node_id]["preconditions"] = executable_preconditions
+
+            # Action Effects
+            executable_effects = []
+            for effect in executable_graph.nodes[node_id]["effects"]:
+                eff_name = effect.fluent.fluent().name
+                eff_value = map_effect_value(effect.value)
+                if str(eff_name) not in self._fluent_functions:
+                    raise ValueError(
+                        f"Fluent {eff_name} not defined in API! "
+                        f"Please add it to the API before proceeding."
+                    )
+                executable_effects.append((self._fluent_functions[eff_name], eff_value))
+            executable_graph.nodes[node_id]["effects"] = executable_effects
 
         return executable_graph

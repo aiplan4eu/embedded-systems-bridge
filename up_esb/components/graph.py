@@ -87,7 +87,9 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
     """Convert UP Sequential Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
-    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        parent_id, node_name="start", action="start", parameters=(), preconditions=[], effects=[]
+    )
     for i, action in enumerate(plan.actions):
         child_id = i + 1
         dependency_graph.add_node(
@@ -95,12 +97,16 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
             node_name=str(action),
             action=action.action.name,
             parameters=action.actual_parameters,
+            preconditions=action.action.preconditions,
+            effects=action.action.effects,
         )
         dependency_graph.add_edge(parent_id, child_id)
         parent_id = child_id
 
     child_id = parent_id + 1  # End node
-    dependency_graph.add_node(child_id, node_name="end", action="end", parameters=())
+    dependency_graph.add_node(
+        child_id, node_name="end", action="end", parameters=(), preconditions=[], effects=[]
+    )
     dependency_graph.add_edge(parent_id, child_id)
     return dependency_graph
 
