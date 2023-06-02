@@ -381,14 +381,18 @@ class Bridge:
 
             # Action Preconditions
             executable_preconditions = []
-            for precondition in executable_graph.nodes[node_id]["preconditions"]:
-                pred_name = precondition.fluent().name
-                if str(pred_name) not in self._fluent_functions:
-                    raise ValueError(
-                        f"Fluent {pred_name} not defined in API! "
-                        f"Please add it to the API before proceeding."
-                    )
-                executable_preconditions.append(self._fluent_functions[pred_name])
+            for interval, preconditions in executable_graph.nodes[node_id]["preconditions"].items():
+                # Interval is start for instantaneous actions, and (start, end) for timed actions.
+                # TODO: Handle timed actions.
+                for precondition in preconditions:
+                    # TODO: Handle negated preconditions.
+                    pred_name = precondition.fluent().name
+                    if str(pred_name) not in self._fluent_functions:
+                        raise ValueError(
+                            f"Fluent {pred_name} not defined in API! "
+                            f"Please add it to the API before proceeding."
+                        )
+                    executable_preconditions.append(self._fluent_functions[pred_name])
             executable_graph.nodes[node_id]["preconditions"] = executable_preconditions
 
             # Action Effects

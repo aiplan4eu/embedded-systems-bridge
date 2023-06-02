@@ -59,13 +59,17 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
     for i, node in enumerate(nodes):
         node_map[node] = i
 
-    dependency_graph.add_node(node_map["end"], node_name="end", action="end", parameters=())
+    dependency_graph.add_node(
+        node_map["end"], node_name="end", action="end", parameters=(), preconditions={}, effects=[]
+    )
     for action, successors in plan.get_adjacency_list.items():
         dependency_graph.add_node(
             node_map[action],
             node_name=str(action),
             action=action.action.name,
             parameters=action.actual_parameters,
+            preconditions={"start": action.action.preconditions},
+            effects=action.action.effects,
         )
         # add edges to successors
         for succ in successors:
@@ -76,7 +80,14 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
 
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
-    dependency_graph.add_node(node_map["start"], node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        node_map["start"],
+        node_name="start",
+        action="start",
+        parameters=(),
+        preconditions={},
+        effects=[],
+    )
     for node in start_nodes:
         dependency_graph.add_edge(node_map["start"], node)
 
@@ -88,7 +99,7 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
     dependency_graph = nx.DiGraph()
     parent_id = 0
     dependency_graph.add_node(
-        parent_id, node_name="start", action="start", parameters=(), preconditions=[], effects=[]
+        parent_id, node_name="start", action="start", parameters=(), preconditions={}, effects=[]
     )
     for i, action in enumerate(plan.actions):
         child_id = i + 1
@@ -97,7 +108,9 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
             node_name=str(action),
             action=action.action.name,
             parameters=action.actual_parameters,
-            preconditions=action.action.preconditions,
+            preconditions={
+                "start": action.action.preconditions
+            },  # instantaneous are always at start
             effects=action.action.effects,
         )
         dependency_graph.add_edge(parent_id, child_id)
@@ -105,7 +118,7 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
 
     child_id = parent_id + 1  # End node
     dependency_graph.add_node(
-        child_id, node_name="end", action="end", parameters=(), preconditions=[], effects=[]
+        child_id, node_name="end", action="end", parameters=(), preconditions={}, effects=[]
     )
     dependency_graph.add_edge(parent_id, child_id)
     return dependency_graph
@@ -118,7 +131,9 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     next_parents: Set[Tuple[int, Fraction, ActionInstance, Optional[Fraction]]] = set()
 
     # Add all nodes
-    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        parent_id, node_name="start", action="start", parameters=(), preconditions={}, effects=[]
+    )
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
         duration = float(duration.numerator) / float(duration.denominator)
@@ -127,10 +142,17 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
             node_name=f"{str(action)}({duration})",
             action=action.action.name,
             parameters=action.actual_parameters,
+            preconditions=action.action.conditions,
+            effects=action.action.effects,
         )
 
     dependency_graph.add_node(
-        len(plan.timed_actions) + 1, node_name="end", action="end", parameters=()
+        len(plan.timed_actions) + 1,
+        node_name="end",
+        action="end",
+        parameters=(),
+        preconditions={},
+        effects=[],
     )
 
     # Add all edges and durations
