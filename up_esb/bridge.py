@@ -380,32 +380,44 @@ class Bridge:
             executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
 
             # Action Preconditions
-            executable_preconditions = []
+            executable_preconditions: Dict[str, List[Callable]] = {}
             for interval, preconditions in executable_graph.nodes[node_id]["preconditions"].items():
                 # Interval is start for instantaneous actions, and (start, end) for timed actions.
-                # TODO: Handle timed actions.
+                executable_preconditions[interval] = (
+                    []
+                    if interval not in executable_preconditions
+                    else executable_preconditions[interval]
+                )
+
                 for precondition in preconditions:
-                    # TODO: Handle negated preconditions.
+                    # TODO: Handle nested preconditions.
                     pred_name = precondition.fluent().name
                     if str(pred_name) not in self._fluent_functions:
                         raise ValueError(
                             f"Fluent {pred_name} not defined in API! "
                             f"Please add it to the API before proceeding."
                         )
-                    executable_preconditions.append(self._fluent_functions[pred_name])
+                    executable_preconditions[interval].append(self._fluent_functions[pred_name])
             executable_graph.nodes[node_id]["preconditions"] = executable_preconditions
 
             # Action Effects
-            executable_effects = []
-            for effect in executable_graph.nodes[node_id]["effects"]:
-                eff_name = effect.fluent.fluent().name
-                eff_value = map_effect_value(effect.value)
-                if str(eff_name) not in self._fluent_functions:
-                    raise ValueError(
-                        f"Fluent {eff_name} not defined in API! "
-                        f"Please add it to the API before proceeding."
+            executable_effects: Dict[str, List[Tuple[Callable, typing.Any]]] = {}
+            for interval, effects in executable_graph.nodes[node_id]["effects"].items():
+                executable_effects[interval] = (
+                    [] if interval not in executable_effects else executable_effects[interval]
+                )
+
+                for effect in effects:
+                    eff_name = effect.fluent.fluent().name
+                    eff_value = map_effect_value(effect.value)
+                    if str(eff_name) not in self._fluent_functions:
+                        raise ValueError(
+                            f"Fluent {eff_name} not defined in API! "
+                            f"Please add it to the API before proceeding."
+                        )
+                    executable_effects[interval].append(
+                        (self._fluent_functions[eff_name], eff_value)
                     )
-                executable_effects.append((self._fluent_functions[eff_name], eff_value))
             executable_graph.nodes[node_id]["effects"] = executable_effects
 
         return executable_graph
