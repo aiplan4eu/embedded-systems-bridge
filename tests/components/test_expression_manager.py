@@ -45,39 +45,31 @@ class TestExpressionManager(unittest.TestCase):
     def test_simple_fluents(self):
         """Test simple fluents."""
         result = self.ast.convert(Not(self._fluent_bool_1))
-        self.assertEqual(
-            ast.dump(result),
-            "Expression(body=UnaryOp(op=Not(), operand=Name(id='fluent_bool_1_fun', ctx=Load())))",
-        )
-        # Execute the expression
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, False)
 
         result = self.ast.convert(And(self._fluent_bool_1, self._fluent_bool_2))
-        self.assertEqual(
-            ast.dump(result),
-            "Expression(body=BoolOp(op=And(), values=[Name(id='fluent_bool_1_fun', ctx=Load()), Name(id='fluent_bool_2_fun', ctx=Load())]))",
-        )
-        # Execute the expression
-        # actual = eval(compile(result, filename="<ast>", mode="eval"))
-        # self.assertEqual(actual, False) # FIXME: This fails
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
 
         result = self.ast.convert(Or(self._fluent_bool_1, self._fluent_bool_2))
-        self.assertEqual(
-            ast.dump(result),
-            "Expression(body=BoolOp(op=Or(), values=[Name(id='fluent_bool_1_fun', ctx=Load()), Name(id='fluent_bool_2_fun', ctx=Load())]))",
-        )
-        # Execute the expression
-        # actual = eval(compile(result, filename="<ast>", mode="eval"))
-        # self.assertEqual(actual, True) # FIXME: This fails
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
 
-    def test_nested_fluents(self):
+    def test_simple_nested_fluents(self):
         result = self.ast.convert(Not(And(self._fluent_int_1, self._fluent_int_1)))
-        self.assertEqual(
-            ast.dump(result),
-            "Expression(body=UnaryOp(op=Not(), operand=BoolOp(op=And(), values=[Name(id='fluent_int_1_fun', ctx=Load()), Name(id='fluent_int_1_fun', ctx=Load())])))",
-        )
-        # Execute the expression
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        result = self.ast.convert(Not(And(self._fluent_real_1, self._fluent_real_1)))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        result = self.ast.convert(Not(And(self._fluent_bool_1, self._fluent_bool_2)))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
+
+        result = self.ast.convert(Not(And(self._fluent_bool_1, self._fluent_bool_1)))
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, False)
 
@@ -86,3 +78,4 @@ if __name__ == "__main__":
     t = TestExpressionManager()
     t.setUp()
     t.test_simple_fluents()
+    t.test_simple_nested_fluents()

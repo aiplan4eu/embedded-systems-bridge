@@ -45,47 +45,41 @@ class ExpressionManager:
 
         for exp in expression:
             if exp.is_not():
-                if exp.arg(0).fluent():
-                    return ast.UnaryOp(op=ast.Not(), operand=self._map_expression(exp.arg(0)))
+                return ast.UnaryOp(op=ast.Not(), operand=self._map_expression(exp.arg(0)))
             elif exp.is_and():
-                if exp.args[0].fluent():
-                    return ast.BoolOp(
-                        op=ast.And(),
-                        values=[self._map_expression(arg) for arg in exp.args],
-                    )
+                return ast.BoolOp(
+                    op=ast.And(),
+                    values=[self._map_expression(arg) for arg in exp.args],
+                )
             elif exp.is_or():
-                if exp.args[0].fluent():
-                    return ast.BoolOp(
-                        op=ast.Or(),
-                        values=[self._map_expression(arg) for arg in exp.args],
-                    )
+                return ast.BoolOp(
+                    op=ast.Or(),
+                    values=[self._map_expression(arg) for arg in exp.args],
+                )
             elif exp.is_equals():
                 assert len(exp.args) == 2
 
-                if exp.args[0].fluent():
-                    return ast.Compare(
-                        op=ast.Eq(),
-                        left=self._map_expression(exp.args[0]),
-                        right=self._map_expression(exp.args[1]),
-                    )
+                return ast.Compare(
+                    op=ast.Eq(),
+                    left=self._map_expression(exp.args[0]),
+                    right=self._map_expression(exp.args[1]),
+                )
             elif exp.is_le():
                 assert len(exp.args) == 2
 
-                if exp.args[0].fluent():
-                    return ast.Compare(
-                        op=ast.LtE(),
-                        left=self._map_expression(exp.args[0]),
-                        right=self._map_expression(exp.args[1]),
-                    )
+                return ast.Compare(
+                    op=ast.LtE(),
+                    left=self._map_expression(exp.args[0]),
+                    right=self._map_expression(exp.args[1]),
+                )
             elif exp.is_lt():
                 assert len(exp.args) == 2
 
-                if exp.args[0].fluent():
-                    return ast.Compare(
-                        op=ast.Lt(),
-                        left=self._map_expression(exp.args[0]),
-                        right=self._map_expression(exp.args[1]),
-                    )
+                return ast.Compare(
+                    op=ast.Lt(),
+                    left=self._map_expression(exp.args[0]),
+                    right=self._map_expression(exp.args[1]),
+                )
 
             elif exp.is_constant():
                 if exp.constant().is_bool():
@@ -96,7 +90,8 @@ class ExpressionManager:
                     return ast.Constant(value=exp.constant().real_value())
 
             elif exp.fluent:
-                return ast.Name(id=exp.fluent().name, ctx=ast.Load())
+                function = ast.Name(id=exp.fluent().name, ctx=ast.Load())
+                return ast.Call(func=function, args=[], keywords=[])  # TODO: Check with arguments
 
             raise NotImplementedError(
                 f"Expression {exp} not implemented. \n"
