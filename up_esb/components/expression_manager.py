@@ -82,18 +82,27 @@ class ExpressionManager:
                 )
 
             elif exp.is_constant():
-                if exp.constant().is_bool():
-                    return ast.Constant(value=exp.constant().bool_value())
-                elif exp.constant().is_int():
-                    return ast.Constant(value=exp.constant().int_value())
-                elif exp.constant().is_real():
-                    return ast.Constant(value=exp.constant().real_value())
+                if exp.is_bool_constant():
+                    return ast.Constant(value=exp.bool_constant_value())
+                elif exp.is_int_constant():
+                    return ast.Constant(value=exp.int_constant_value())
+                elif exp.is_real_constant():
+                    return ast.Constant(value=exp.real_constant_value())
+                elif exp.is_object_exp():
+                    return ast.Constant(value=exp.object())
+
+                raise ValueError(f"Constant `{str(exp)}` not supported.")
 
             elif exp.fluent:
+                # Arguments in fluents are expected to be grounded
                 function = ast.Name(id=exp.fluent().name, ctx=ast.Load())
-                return ast.Call(func=function, args=[], keywords=[])  # TODO: Check with arguments
+                return ast.Call(
+                    func=function,
+                    args=[self._map_expression(arg) for arg in exp.args],
+                    keywords=[],
+                )
 
             raise NotImplementedError(
-                f"Expression {exp} not implemented. \n"
+                f"Expression `{str(exp)}` not implemented. \n"
                 "Supported operators are: Not, And, Or, Equals, Le, Lt, Constant, Fluent."
             )

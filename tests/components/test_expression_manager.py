@@ -30,6 +30,21 @@ def fluent_real_1_fun():
     return 1.0
 
 
+def fluent_arg_bool_1_fun(arg: bool):
+    """Fluent real 1."""
+    return arg
+
+
+def fluent_arg_int_1_fun(arg: int):
+    """Fluent real 1."""
+    return arg
+
+
+def fluent_arg_real_1_fun(arg: float):
+    """Fluent real 1."""
+    return arg
+
+
 class TestExpressionManager(unittest.TestCase):
     """Test conversion of FNode to AST tree."""
 
@@ -39,6 +54,10 @@ class TestExpressionManager(unittest.TestCase):
         self._fluent_bool_2 = self.bridge.create_fluent_from_function(fluent_bool_2_fun)
         self._fluent_int_1 = self.bridge.create_fluent_from_function(fluent_int_1_fun)
         self._fluent_real_1 = self.bridge.create_fluent_from_function(fluent_real_1_fun)
+
+        self._fluent_arg_bool_1 = self.bridge.create_fluent_from_function(fluent_arg_bool_1_fun)
+        self._fluent_arg_int_1 = self.bridge.create_fluent_from_function(fluent_arg_int_1_fun)
+        self._fluent_arg_real_1 = self.bridge.create_fluent_from_function(fluent_arg_real_1_fun)
 
         self.ast = ExpressionManager()
 
@@ -73,9 +92,49 @@ class TestExpressionManager(unittest.TestCase):
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, False)
 
+    def test_simple_fluents_with_args(self):
+        result = self.ast.convert(self._fluent_arg_bool_1(True))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
+
+        result = self.ast.convert(Not(self._fluent_arg_bool_1(False)))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
+
+        result = self.ast.convert(Not(self._fluent_arg_int_1(1)))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        result = self.ast.convert(Not(self._fluent_arg_real_1(1)))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+    def test_simple_nested_fluents_with_args(self):
+        result = self.ast.convert(Not(And(self._fluent_arg_int_1(1), self._fluent_arg_int_1(1))))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        result = self.ast.convert(Not(And(self._fluent_arg_real_1(1), self._fluent_arg_real_1(1))))
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        result = self.ast.convert(
+            Not(And(self._fluent_arg_bool_1(True), self._fluent_arg_bool_1(False)))
+        )
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
+
+        result = self.ast.convert(
+            Not(And(self._fluent_arg_bool_1(True), self._fluent_arg_bool_1(True)))
+        )
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
 
 if __name__ == "__main__":
     t = TestExpressionManager()
     t.setUp()
     t.test_simple_fluents()
     t.test_simple_nested_fluents()
+    t.test_simple_fluents_with_args()
+    t.test_simple_nested_fluents_with_args()
