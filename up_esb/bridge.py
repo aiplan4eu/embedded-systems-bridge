@@ -47,8 +47,8 @@ from unified_planning.plans import (
 )
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
+from up_esb.components import ExpressionManager
 from up_esb.components.graph import plan_to_dependency_graph
-from up_esb.components.up_utils import map_effect_value
 
 
 class Bridge:
@@ -371,13 +371,15 @@ class Bridge:
             executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action)]
 
             # Parameters
-            parameters = []
-            for param in action_parameters:
-                param = str(param)
-                if param not in self._api_objects:
-                    raise ValueError(f"Object {param} not defined in API!")
-                parameters.append(self._api_objects[str(param)])
-            executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
+            parameters = {}
+            for param, actual_param in action_parameters.items():
+                actual_param = str(actual_param)
+                if actual_param not in self._api_objects:
+                    raise ValueError(f"Object {actual_param} not defined in API!")
+                parameters[param] = self._api_objects[str(actual_param)]
+            executable_graph.nodes[node_id]["parameters"] = parameters
+
+            exp_manager = ExpressionManager()
 
             # Action Preconditions
             executable_preconditions: Dict[str, List[Callable]] = {}
@@ -390,7 +392,6 @@ class Bridge:
                 )
 
                 for precondition in preconditions:
-                    # TODO: Handle nested preconditions.
                     pred_name = precondition.fluent().name
                     if str(pred_name) not in self._fluent_functions:
                         raise ValueError(
@@ -409,7 +410,7 @@ class Bridge:
 
                 for effect in effects:
                     eff_name = effect.fluent.fluent().name
-                    eff_value = map_effect_value(effect.value)
+                    eff_value = exp_manager.convert(effect.value)
                     if str(eff_name) not in self._fluent_functions:
                         raise ValueError(
                             f"Fluent {eff_name} not defined in API! "

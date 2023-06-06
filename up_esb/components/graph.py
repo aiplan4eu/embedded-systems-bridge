@@ -63,11 +63,16 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
         node_map["end"], node_name="end", action="end", parameters=(), preconditions={}, effects={}
     )
     for action, successors in plan.get_adjacency_list.items():
+        # Gather parameters
+        parameters = {}
+        for param, actual_param in zip(action.action.parameters, action.actual_parameters):
+            parameters[param.name] = actual_param
+
         dependency_graph.add_node(
             node_map[action],
             node_name=str(action),
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
             preconditions={"start": action.action.preconditions},
             effects=action.action.effects,
         )
@@ -102,12 +107,17 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
         parent_id, node_name="start", action="start", parameters=(), preconditions={}, effects={}
     )
     for i, action in enumerate(plan.actions):
+        # Gather parameters
+        parameters = {}
+        for param, actual_param in zip(action.action.parameters, action.actual_parameters):
+            parameters[param.name] = actual_param
+
         child_id = i + 1
         dependency_graph.add_node(
             child_id,
             node_name=str(action),
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
             preconditions={
                 "start": action.action.preconditions
             },  # instantaneous are always at start
@@ -137,11 +147,17 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
         duration = float(duration.numerator) / float(duration.denominator)
+
+        # Gather parameters
+        parameters = {}
+        for param, actual_param in zip(action.action.parameters, action.actual_parameters):
+            parameters[param.name] = actual_param
+
         dependency_graph.add_node(
             child_id,
             node_name=f"{str(action)}({duration})",
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
             preconditions=action.action.conditions,
             effects=action.action.effects,
         )
@@ -169,13 +185,20 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
 
                     next_parent_id = next_parent[0]
                     next_child_id = _get_node_id(dependency_graph, next_child_name)
+                    # Gather parameters
+                    parameters = {}
+                    for param, actual_param in zip(
+                        next_action.action.parameters, next_action.actual_parameters
+                    ):
+                        parameters[param.name] = actual_param
+
                     if next_child_id is None:
                         next_child_id = child_id + 1
                         dependency_graph.add_node(
                             next_child_id,
                             node_name=next_child_name,
                             action=next_action.action.name,
-                            parameters=next_action.actual_parameters,
+                            parameters=parameters,
                         )
                     dependency_graph.add_edge(next_parent_id, next_child_id)
                 next_parents = set()

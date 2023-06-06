@@ -13,5 +13,6 @@
 # limitations under the License.
 """Useful components for UP Bridge."""
 from up_esb.components.actions import ActionDefinition
+from up_esb.components.expression_manager import ExpressionManager
 
-__all__ = ["ActionDefinition"]
+__all__ = ["ActionDefinition", "ExpressionManager"]
