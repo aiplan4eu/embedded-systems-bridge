@@ -1,3 +1,18 @@
+# Copyright 2022 Selvakumar H S, LAAS-CNRS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Convert the unified planning FNode expression to an AST tree."""
 import ast
 
 from unified_planning.shortcuts import FNode, get_environment
@@ -17,7 +32,13 @@ class ExpressionManager:
         return tree
 
     def _create_tree(self, expression: FNode):
-        return self._map_expression(expression)
+        ast_expression = self._map_expression(expression)
+        if ast_expression is not None:
+            # Convert to executable code
+            ast.fix_missing_locations(ast_expression)
+            return ast.Expression(body=ast_expression)
+
+        raise ValueError(f"Unable to parse expression {expression}")
 
     def _map_expression(self, expression: FNode):
         expression = self._manager.auto_promote(expression)
@@ -76,3 +97,8 @@ class ExpressionManager:
 
             elif exp.fluent:
                 return ast.Name(id=exp.fluent().name, ctx=ast.Load())
+
+            raise NotImplementedError(
+                f"Expression {exp} not implemented. \n"
+                "Supported operators are: Not, And, Or, Equals, Le, Lt, Constant, Fluent."
+            )

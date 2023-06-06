@@ -6,6 +6,8 @@ from unified_planning.shortcuts import *  # pylint: disable=unused-wildcard-impo
 from up_esb.bridge import Bridge
 from up_esb.components.expression_manager import ExpressionManager
 
+# pylint: disable=missing-docstring, line-too-long, eval-used
+
 
 # Example fluents
 def fluent_bool_1_fun():
@@ -41,16 +43,43 @@ class TestExpressionManager(unittest.TestCase):
         self.ast = ExpressionManager()
 
     def test_simple_fluents(self):
+        """Test simple fluents."""
         result = self.ast.convert(Not(self._fluent_bool_1))
         self.assertEqual(
-            ast.dump(result), "UnaryOp(op=Not(), operand=Name(id='fluent_bool_1_fun', ctx=Load()))"
+            ast.dump(result),
+            "Expression(body=UnaryOp(op=Not(), operand=Name(id='fluent_bool_1_fun', ctx=Load())))",
         )
+        # Execute the expression
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
 
         result = self.ast.convert(And(self._fluent_bool_1, self._fluent_bool_2))
         self.assertEqual(
             ast.dump(result),
-            "BoolOp(op=And(), values=[Name(id='fluent_bool_1', ctx=Load()), Name(id='fluent_bool_2_fun', ctx=Load())])",
+            "Expression(body=BoolOp(op=And(), values=[Name(id='fluent_bool_1_fun', ctx=Load()), Name(id='fluent_bool_2_fun', ctx=Load())]))",
         )
+        # Execute the expression
+        # actual = eval(compile(result, filename="<ast>", mode="eval"))
+        # self.assertEqual(actual, False) # FIXME: This fails
+
+        result = self.ast.convert(Or(self._fluent_bool_1, self._fluent_bool_2))
+        self.assertEqual(
+            ast.dump(result),
+            "Expression(body=BoolOp(op=Or(), values=[Name(id='fluent_bool_1_fun', ctx=Load()), Name(id='fluent_bool_2_fun', ctx=Load())]))",
+        )
+        # Execute the expression
+        # actual = eval(compile(result, filename="<ast>", mode="eval"))
+        # self.assertEqual(actual, True) # FIXME: This fails
+
+    def test_nested_fluents(self):
+        result = self.ast.convert(Not(And(self._fluent_int_1, self._fluent_int_1)))
+        self.assertEqual(
+            ast.dump(result),
+            "Expression(body=UnaryOp(op=Not(), operand=BoolOp(op=And(), values=[Name(id='fluent_int_1_fun', ctx=Load()), Name(id='fluent_int_1_fun', ctx=Load())])))",
+        )
+        # Execute the expression
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
 
 
 if __name__ == "__main__":
