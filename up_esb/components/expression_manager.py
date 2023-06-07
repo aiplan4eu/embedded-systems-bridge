@@ -23,11 +23,13 @@ class ExpressionManager:
 
     def __init__(self):
         self._expression = None
+        self._options = None
         self._manager = get_environment().expression_manager
 
-    def convert(self, expression: FNode):
+    def convert(self, expression: FNode, **options):
         """Walk the tree."""
         self._expression = expression
+        self._options = options
         tree = self._create_tree(expression)
         return tree
 
@@ -92,6 +94,17 @@ class ExpressionManager:
                     return ast.Constant(value=exp.object())
 
                 raise ValueError(f"Constant `{str(exp)}` not supported.")
+
+            elif exp.is_parameter_exp():
+                parameters = self._options.get("parameters")
+                if parameters is None:
+                    raise ValueError("Parameters options are expected but not provided.")
+
+                if exp.parameter().name not in parameters:
+                    raise ValueError(f"Parameter `{exp.parameter().name}` not found.")
+
+                actual_parameter = parameters[exp.parameter().name]
+                return ast.Name(id=actual_parameter, ctx=ast.Load())
 
             elif exp.fluent:
                 # Arguments in fluents are expected to be grounded
