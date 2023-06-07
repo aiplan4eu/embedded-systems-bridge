@@ -392,12 +392,6 @@ class Bridge:
                 )
 
                 for precondition in preconditions:
-                    pred_name = precondition.fluent().name
-                    if str(pred_name) not in self._fluent_functions:
-                        raise ValueError(
-                            f"Fluent {pred_name} not defined in API! "
-                            f"Please add it to the API before proceeding."
-                        )
                     executable_preconditions[interval].append(
                         exp_manager.convert(precondition, parameters=parameters)
                     )
@@ -411,12 +405,6 @@ class Bridge:
                 )
 
                 for effect in effects:
-                    eff_name = effect.fluent.fluent().name
-                    if str(eff_name) not in self._fluent_functions:
-                        raise ValueError(
-                            f"Fluent {eff_name} not defined in API! "
-                            f"Please add it to the API before proceeding."
-                        )
                     executable_effects[interval].append(
                         (
                             exp_manager.convert(effect.fluent, parameters=parameters),
