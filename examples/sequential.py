@@ -30,11 +30,14 @@ class Location:
     def __repr__(self) -> str:
         return self.name
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 class Robot:
     """Robot class."""
 
-    location = "l1"
+    location = Location("l1")
 
     def __init__(self):
         self.l_from = ""

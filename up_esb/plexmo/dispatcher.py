@@ -176,14 +176,22 @@ class PlanDispatcher:
 
         # Execution options
         dry_run = self._options.get("dry_run", False)
+        verbose = self._options.get("verbose", False)
 
         # Preconditions
-        for _, conditions in preconditions.items():
+        for i, (_, conditions) in enumerate(preconditions.items()):
             for condition in conditions:
                 result = eval(  # pylint: disable=eval-used
                     compile(condition, filename="<ast>", mode="eval"), context
                 )
-            print(f"Tested preconditions: {len(conditions)}")
+
+                # Check if all preconditions return boolean True
+                if not result and not dry_run:
+                    raise RuntimeError(
+                        f"Precondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
+                    )
+            if verbose:
+                print(f"Evaluated {len(conditions)} preconditions ...")
 
         # Execute action
         action[1]["executor"](**parameters)
@@ -201,4 +209,5 @@ class PlanDispatcher:
                     raise RuntimeError(
                         f"Postcondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
                     )
-            print(f"Tested postconditions: {len(conditions)}")
+            if verbose:
+                print(f"Evaluated {len(conditions)} postconditions ...")
