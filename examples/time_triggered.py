@@ -96,11 +96,6 @@ def light_match_fun(m: Match):  # pylint: disable=unused-argument
     return bool(randint(0, 1))
 
 
-# Objects
-f1, f2, f3 = Fuse("f1"), Fuse("f2"), Fuse("f3")
-m1, m2, m3 = Match("m1"), Match("m2"), Match("m3")
-
-
 #################### 2. Define the problem ####################
 def define_problem():
     """Define the problem."""
@@ -114,12 +109,12 @@ def define_problem():
     match_used = bridge.create_fluent_from_function(match_used_fun)
     fuse_mended = bridge.create_fluent_from_function(fuse_mended_fun)
 
-    obj_f1 = bridge.create_object("f1", f1)
-    obj_f2 = bridge.create_object("f2", f2)
-    obj_f3 = bridge.create_object("f3", f3)
-    obj_m1 = bridge.create_object("m1", m1)
-    obj_m2 = bridge.create_object("m2", m2)
-    obj_m3 = bridge.create_object("m3", m3)
+    f1 = bridge.create_object("f1", Fuse("f1"))
+    f2 = bridge.create_object("f2", Fuse("f2"))
+    f3 = bridge.create_object("f3", Fuse("f3"))
+    m1 = bridge.create_object("m1", Match("m1"))
+    m2 = bridge.create_object("m2", Match("m2"))
+    m3 = bridge.create_object("m3", Match("m3"))
 
     light_match, [m] = bridge.create_action(
         "LightMatch", _callable=actions.light_match, m=Match, duration=5
@@ -141,15 +136,15 @@ def define_problem():
     problem = bridge.define_problem()
     problem.set_initial_value(light, False)
     problem.set_initial_value(handsfree, True)
-    problem.set_initial_value(match_used(obj_m1), False)
-    problem.set_initial_value(match_used(obj_m2), False)
-    problem.set_initial_value(match_used(obj_m3), False)
-    problem.set_initial_value(fuse_mended(obj_f1), False)
-    problem.set_initial_value(fuse_mended(obj_f2), False)
-    problem.set_initial_value(fuse_mended(obj_f3), False)
-    problem.add_goal(fuse_mended(obj_f1))
-    problem.add_goal(fuse_mended(obj_f2))
-    problem.add_goal(fuse_mended(obj_f3))
+    problem.set_initial_value(match_used(m1), False)
+    problem.set_initial_value(match_used(m2), False)
+    problem.set_initial_value(match_used(m3), False)
+    problem.set_initial_value(fuse_mended(f1), False)
+    problem.set_initial_value(fuse_mended(f2), False)
+    problem.set_initial_value(fuse_mended(f3), False)
+    problem.add_goal(fuse_mended(f1))
+    problem.add_goal(fuse_mended(f2))
+    problem.add_goal(fuse_mended(f3))
 
     return bridge, problem
 
@@ -167,27 +162,7 @@ def main():
         print(action)
     print("*" * 10)
 
-    def dispatch_callback(action):
-        # TODO: Remove once integrated with dispatcher
-        """Dispatch callback function."""
-        parameters = action[1]["parameters"]
-        preconditions = action[1]["preconditions"]
-        post_conditions = action[1]["post_conditions"]
-        # Preconditions
-        for _, conditions in preconditions.items():
-            for condition in conditions:
-                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
-            print(f"Tested preconditions: {len(conditions)}")
-
-        action[1]["executor"](**parameters)
-
-        for _, conditions in post_conditions.items():
-            for condition, _ in conditions:
-                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
-            print(f"Tested postconditions: {len(conditions)}")
-
     graph_executor = bridge.get_executable_graph(plan)
-    dispatcher.set_dispatch_callback(dispatch_callback)
     dispatcher.execute_plan(graph_executor)
 
     # draw graph

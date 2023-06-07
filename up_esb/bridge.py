@@ -360,6 +360,12 @@ class Bridge:
         """Get executable graph from plan."""
         executable_graph = plan_to_dependency_graph(plan)
 
+        # Add elements and functions as a context for the executable graph
+        global_context = {}
+        global_context.update(self._api_objects)
+        global_context.update(self._api_actions)
+        global_context.update(self._fluent_functions)
+
         for node in executable_graph.nodes(data=True):
             node_id = node[0]
             action = node[1]["action"]
@@ -412,5 +418,8 @@ class Bridge:
                         )
                     )
             executable_graph.nodes[node_id]["post_conditions"] = executable_effects
+
+            # Finally setup execution context to the nodes
+            executable_graph.nodes[node_id]["context"] = global_context
 
         return executable_graph

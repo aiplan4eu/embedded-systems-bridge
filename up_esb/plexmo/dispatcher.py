@@ -168,16 +168,16 @@ class PlanDispatcher:
     def _default_dispatch_cb(action):
         """Dispatch callback function."""
         # TODO: Add verification of preconditions and postconditions
-        # TODO: Add context for ast evaluation
         parameters = action[1]["parameters"]
         preconditions = action[1]["preconditions"]
         post_conditions = action[1]["post_conditions"]
+        context = action[1]["context"]
         # Preconditions
         for _, conditions in preconditions.items():
             for condition in conditions:
                 # TODO: Export the eval function to a separate module
                 result = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval")
+                    compile(condition, filename="<ast>", mode="eval"), context
                 )
             print(f"Tested preconditions: {len(conditions)}")
 
@@ -186,6 +186,6 @@ class PlanDispatcher:
         for _, conditions in post_conditions.items():
             for condition, value in conditions:
                 result = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval")
+                    compile(condition, filename="<ast>", mode="eval"), context
                 )
             print(f"Tested postconditions: {len(conditions)}")

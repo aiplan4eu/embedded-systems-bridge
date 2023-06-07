@@ -28,10 +28,6 @@ from parallel import (
     Robot,
     info_sent_fun,
     is_surveyed_fun,
-    l1,
-    l2,
-    l3,
-    l4,
     robot_at_fun,
     visited_fun,
 )
@@ -74,29 +70,29 @@ def define_problem():
     # send_info.add_precondition(is_surveyed())
     send_info.add_effect(info_sent(l), True)
 
-    obj_l1 = bridge.create_object("l1", l1)
-    obj_l2 = bridge.create_object("l2", l2)
-    obj_l3 = bridge.create_object("l3", l3)
-    obj_l4 = bridge.create_object("l4", l4)
+    l1 = bridge.create_object("l1", Location("l1"))
+    l2 = bridge.create_object("l2", Location("l2"))
+    l3 = bridge.create_object("l3", Location("l3"))
+    l4 = bridge.create_object("l4", Location("l4"))
 
     problem = bridge.define_problem()
     problem.set_initial_value(is_surveyed(), True)
-    problem.set_initial_value(robot_at(obj_l1), True)
-    problem.set_initial_value(robot_at(obj_l2), False)
-    problem.set_initial_value(robot_at(obj_l3), False)
-    problem.set_initial_value(robot_at(obj_l4), False)
-    problem.set_initial_value(visited(obj_l1), True)
-    problem.set_initial_value(visited(obj_l2), False)
-    problem.set_initial_value(visited(obj_l3), False)
-    problem.set_initial_value(visited(obj_l4), False)
-    problem.set_initial_value(info_sent(obj_l1), False)
-    problem.set_initial_value(info_sent(obj_l2), False)
-    problem.set_initial_value(info_sent(obj_l3), False)
-    problem.set_initial_value(info_sent(obj_l4), False)
-    problem.add_goal(visited(obj_l2))
-    problem.add_goal(visited(obj_l3))
-    problem.add_goal(visited(obj_l4))
-    problem.add_goal(robot_at(obj_l4))
+    problem.set_initial_value(robot_at(l1), True)
+    problem.set_initial_value(robot_at(l2), False)
+    problem.set_initial_value(robot_at(l3), False)
+    problem.set_initial_value(robot_at(l4), False)
+    problem.set_initial_value(visited(l1), True)
+    problem.set_initial_value(visited(l2), False)
+    problem.set_initial_value(visited(l3), False)
+    problem.set_initial_value(visited(l4), False)
+    problem.set_initial_value(info_sent(l1), False)
+    problem.set_initial_value(info_sent(l2), False)
+    problem.set_initial_value(info_sent(l3), False)
+    problem.set_initial_value(info_sent(l4), False)
+    problem.add_goal(visited(l2))
+    problem.add_goal(visited(l3))
+    problem.add_goal(visited(l4))
+    problem.add_goal(robot_at(l4))
     return bridge, problem
 
 
