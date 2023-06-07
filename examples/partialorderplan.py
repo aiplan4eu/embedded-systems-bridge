@@ -34,7 +34,7 @@ from parallel import (
 from unified_planning.shortcuts import PlanKind
 
 from up_esb.bridge import Bridge
-from up_esb.execution.executor import Executor
+from up_esb.executor import Executor
 
 # Define the problem. The domain is re-used from examples/parallel.py
 
