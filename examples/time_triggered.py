@@ -162,7 +162,27 @@ def main():
         print(action)
     print("*" * 10)
 
+    def dispatch_callback(action):
+        # TODO: Remove once integrated with dispatcher
+        """Dispatch callback function."""
+        parameters = action[1]["parameters"]
+        preconditions = action[1]["preconditions"]
+        post_conditions = action[1]["post_conditions"]
+        # Preconditions
+        for _, conditions in preconditions.items():
+            for condition in conditions:
+                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
+            print(f"Tested preconditions: {len(conditions)}")
+
+        action[1]["executor"](**parameters)
+
+        for _, conditions in post_conditions.items():
+            for condition, _ in conditions:
+                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
+            print(f"Tested postconditions: {len(conditions)}")
+
     graph_executor = bridge.get_executable_graph(plan)
+    dispatcher.set_dispatch_callback(dispatch_callback)
     dispatcher.execute_plan(graph_executor)
 
     # draw graph
