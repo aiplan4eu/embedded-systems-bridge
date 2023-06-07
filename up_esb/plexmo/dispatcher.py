@@ -166,8 +166,26 @@ class PlanDispatcher:
 
     @staticmethod
     def _default_dispatch_cb(action):
-        # TODO Add condition evaluations
+        """Dispatch callback function."""
+        # TODO: Add verification of preconditions and postconditions
+        # TODO: Add context for ast evaluation
         parameters = action[1]["parameters"]
-        result = action[1]["executor"](*parameters)
+        preconditions = action[1]["preconditions"]
+        post_conditions = action[1]["post_conditions"]
+        # Preconditions
+        for _, conditions in preconditions.items():
+            for condition in conditions:
+                # TODO: Export the eval function to a separate module
+                result = eval(  # pylint: disable=eval-used
+                    compile(condition, filename="<ast>", mode="eval")
+                )
+            print(f"Tested preconditions: {len(conditions)}")
 
-        return result
+        result = action[1]["executor"](**parameters)
+
+        for _, conditions in post_conditions.items():
+            for condition, value in conditions:
+                result = eval(  # pylint: disable=eval-used
+                    compile(condition, filename="<ast>", mode="eval")
+                )
+            print(f"Tested postconditions: {len(conditions)}")

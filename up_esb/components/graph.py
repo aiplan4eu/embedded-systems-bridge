@@ -60,7 +60,12 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
         node_map[node] = i
 
     dependency_graph.add_node(
-        node_map["end"], node_name="end", action="end", parameters=(), preconditions={}, effects={}
+        node_map["end"],
+        node_name="end",
+        action="end",
+        parameters=(),
+        preconditions={},
+        post_conditions={},
     )
     for action, successors in plan.get_adjacency_list.items():
         # Gather parameters
@@ -74,7 +79,7 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
             action=action.action.name,
             parameters=parameters,
             preconditions={"start": action.action.preconditions},
-            effects=action.action.effects,
+            post_conditions=action.action.effects,
         )
         # add edges to successors
         for succ in successors:
@@ -91,7 +96,7 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
         action="start",
         parameters=(),
         preconditions={},
-        effects={},
+        post_conditions={},
     )
     for node in start_nodes:
         dependency_graph.add_edge(node_map["start"], node)
@@ -104,7 +109,12 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
     dependency_graph = nx.DiGraph()
     parent_id = 0
     dependency_graph.add_node(
-        parent_id, node_name="start", action="start", parameters=(), preconditions={}, effects={}
+        parent_id,
+        node_name="start",
+        action="start",
+        parameters=(),
+        preconditions={},
+        post_conditions={},
     )
     for i, action in enumerate(plan.actions):
         # Gather parameters
@@ -121,14 +131,14 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
             preconditions={
                 "start": action.action.preconditions
             },  # instantaneous are always at start
-            effects={"start": action.action.effects},
+            post_conditions={"start": action.action.effects},
         )
         dependency_graph.add_edge(parent_id, child_id)
         parent_id = child_id
 
     child_id = parent_id + 1  # End node
     dependency_graph.add_node(
-        child_id, node_name="end", action="end", parameters=(), preconditions={}, effects={}
+        child_id, node_name="end", action="end", parameters=(), preconditions={}, post_conditions={}
     )
     dependency_graph.add_edge(parent_id, child_id)
     return dependency_graph
@@ -142,7 +152,12 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
 
     # Add all nodes
     dependency_graph.add_node(
-        parent_id, node_name="start", action="start", parameters=(), preconditions={}, effects={}
+        parent_id,
+        node_name="start",
+        action="start",
+        parameters=(),
+        preconditions={},
+        post_conditions={},
     )
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
@@ -159,7 +174,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
             action=action.action.name,
             parameters=parameters,
             preconditions=action.action.conditions,
-            effects=action.action.effects,
+            post_conditions=action.action.effects,
         )
 
     dependency_graph.add_node(
@@ -168,7 +183,7 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
         action="end",
         parameters=(),
         preconditions={},
-        effects={},
+        post_conditions={},
     )
 
     # Add all edges and durations

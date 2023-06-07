@@ -60,6 +60,12 @@ def visited_fun(l: Location):
     return Robot().location == l
 
 
+# Objects
+l1 = Location("l1")
+l2 = Location("l2")
+l3 = Location("l3")
+l4 = Location("l4")
+
 #################### 2. Define the problem ####################
 
 
@@ -73,10 +79,10 @@ def define_problem():
     robot_at = bridge.create_fluent_from_function(robot_at_fun)
     visited = bridge.create_fluent_from_function(visited_fun)
 
-    l1 = bridge.create_object("l1", Location("l1"))
-    l2 = bridge.create_object("l2", Location("l2"))
-    l3 = bridge.create_object("l3", Location("l3"))
-    l4 = bridge.create_object("l4", Location("l4"))
+    obj_l1 = bridge.create_object("l1", Location("l1"))
+    obj_l2 = bridge.create_object("l2", Location("l2"))
+    obj_l3 = bridge.create_object("l3", Location("l3"))
+    obj_l4 = bridge.create_object("l4", Location("l4"))
 
     move, [l_from, l_to] = bridge.create_action(
         "Move", _callable=robot.move, l_from=Location, l_to=Location
@@ -87,18 +93,18 @@ def define_problem():
     move.add_effect(visited(l_to), True)
 
     problem = bridge.define_problem()
-    problem.set_initial_value(robot_at(l1), True)
-    problem.set_initial_value(robot_at(l2), False)
-    problem.set_initial_value(robot_at(l3), False)
-    problem.set_initial_value(robot_at(l4), False)
-    problem.set_initial_value(visited(l1), True)
-    problem.set_initial_value(visited(l2), False)
-    problem.set_initial_value(visited(l3), False)
-    problem.set_initial_value(visited(l4), False)
-    problem.add_goal(visited(l2))
-    problem.add_goal(visited(l3))
-    problem.add_goal(visited(l4))
-    problem.add_goal(robot_at(l4))
+    problem.set_initial_value(robot_at(obj_l1), True)
+    problem.set_initial_value(robot_at(obj_l2), False)
+    problem.set_initial_value(robot_at(obj_l3), False)
+    problem.set_initial_value(robot_at(obj_l4), False)
+    problem.set_initial_value(visited(obj_l1), True)
+    problem.set_initial_value(visited(obj_l2), False)
+    problem.set_initial_value(visited(obj_l3), False)
+    problem.set_initial_value(visited(obj_l4), False)
+    problem.add_goal(visited(obj_l2))
+    problem.add_goal(visited(obj_l3))
+    problem.add_goal(visited(obj_l4))
+    problem.add_goal(robot_at(obj_l4))
 
     return bridge, problem
 
@@ -117,7 +123,27 @@ def main():
         print(action)
     print("*" * 10)
 
+    def dispatch_callback(action):
+        # TODO: Remove once integrated with dispatcher
+        """Dispatch callback function."""
+        parameters = action[1]["parameters"]
+        preconditions = action[1]["preconditions"]
+        post_conditions = action[1]["post_conditions"]
+        # Preconditions
+        for _, conditions in preconditions.items():
+            for condition in conditions:
+                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
+            print(f"Tested preconditions: {len(conditions)}")
+
+        action[1]["executor"](**parameters)
+
+        for _, conditions in post_conditions.items():
+            for condition, _ in conditions:
+                eval(compile(condition, filename="<ast>", mode="eval"))  # pylint: disable=eval-used
+            print(f"Tested postconditions: {len(conditions)}")
+
     graph_executor = bridge.get_executable_graph(plan)
+    dispatcher.set_dispatch_callback(dispatch_callback)
     dispatcher.execute_plan(graph_executor)
 
     # draw graph

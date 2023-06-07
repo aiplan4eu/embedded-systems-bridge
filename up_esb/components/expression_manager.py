@@ -104,7 +104,7 @@ class ExpressionManager:
                     raise ValueError(f"Parameter `{exp.parameter().name}` not found.")
 
                 actual_parameter = parameters[exp.parameter().name]
-                return ast.Name(id=actual_parameter, ctx=ast.Load())
+                return ast.Name(id=str(actual_parameter), ctx=ast.Load())
 
             elif exp.fluent:
                 # Arguments in fluents are expected to be grounded

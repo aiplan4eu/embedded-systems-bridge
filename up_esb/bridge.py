@@ -405,7 +405,7 @@ class Bridge:
 
             # Action Effects
             executable_effects: Dict[str, List[Tuple[Callable, typing.Any]]] = {}
-            for interval, effects in executable_graph.nodes[node_id]["effects"].items():
+            for interval, effects in executable_graph.nodes[node_id]["post_conditions"].items():
                 executable_effects[interval] = (
                     [] if interval not in executable_effects else executable_effects[interval]
                 )
@@ -423,6 +423,6 @@ class Bridge:
                             exp_manager.convert(effect.value, parameters=parameters),
                         )
                     )
-            executable_graph.nodes[node_id]["effects"] = executable_effects
+            executable_graph.nodes[node_id]["post_conditions"] = executable_effects
 
         return executable_graph
