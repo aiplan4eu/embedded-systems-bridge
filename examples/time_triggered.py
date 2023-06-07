@@ -14,7 +14,6 @@
 """Example for time triggered plan execution."""
 
 import time
-from random import randint
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -50,13 +49,12 @@ class Fuse:
 class TemporalActions:
     """Class for temporal actions."""
 
-    def __init__(self):
-        self.m = None
-        self.f = None
+    m = None
+    f = None
 
     def light_match(self, m: Match):
         """Light match action."""
-        self.m = m
+        TemporalActions.m = m
 
         print(f"Lighting match {m}")
         time.sleep(5)
@@ -64,7 +62,7 @@ class TemporalActions:
 
     def mend_fuse(self, f: Fuse):
         """Mend fuse action."""
-        self.f = f
+        TemporalActions.f = f
 
         print(f"Mending fuse {f}")
         time.sleep(3)
@@ -73,27 +71,27 @@ class TemporalActions:
 
 def handsfree_fun():
     """Check if hands are free."""
-    return True
+    return TemporalActions().m is None and TemporalActions().f is None
 
 
 def light_fun():
     """Check if lighted."""
-    return True
+    return TemporalActions().m is not None
 
 
 def match_used_fun(m: Match):  # pylint: disable=unused-argument
     """Check if match is used."""
-    return bool(randint(0, 1))
+    return TemporalActions().m == m
 
 
 def fuse_mended_fun(f: Fuse):  # pylint: disable=unused-argument
     """Fuse mended?"""
-    return bool(randint(0, 1))
+    return TemporalActions().f == f
 
 
 def light_match_fun(m: Match):  # pylint: disable=unused-argument
     """Light match?"""
-    return bool(randint(0, 1))
+    return TemporalActions().m == m
 
 
 #################### 2. Define the problem ####################
@@ -163,7 +161,9 @@ def main():
     print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
-    dispatcher.execute_plan(graph_executor)
+    dispatcher.execute_plan(
+        graph_executor, dry_run=True
+    )  # Dry run condition checks since temporal evaluation is not supported yet
 
     # draw graph
     plt.figure(figsize=(10, 10))

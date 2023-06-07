@@ -97,12 +97,14 @@ class PlanDispatcher:
         self._dispatch_cb = self._default_dispatch_cb
         self._replan_cb = None
         self._dispatched_position = 0
+        self._options = None
 
-    def execute_plan(self, graph: nx.DiGraph):
+    def execute_plan(self, graph: nx.DiGraph, **options):
         """Execute the plan."""
         self._status = "executing"
         self._graph = graph
         self._dispatched_position = 0
+        self._options = options
         replanned = False
         last_failed_action = None
         for node in self._graph.nodes(data=True):
@@ -164,28 +166,39 @@ class PlanDispatcher:
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
 
-    @staticmethod
-    def _default_dispatch_cb(action):
+    def _default_dispatch_cb(self, action):
         """Dispatch callback function."""
-        # TODO: Add verification of preconditions and postconditions
+        # TODO: Add verification of preconditions
         parameters = action[1]["parameters"]
         preconditions = action[1]["preconditions"]
-        post_conditions = action[1]["post_conditions"]
+        post_conditions = action[1]["postconditions"]
         context = action[1]["context"]
+
+        # Execution options
+        dry_run = self._options.get("dry_run", False)
+
         # Preconditions
         for _, conditions in preconditions.items():
             for condition in conditions:
-                # TODO: Export the eval function to a separate module
                 result = eval(  # pylint: disable=eval-used
                     compile(condition, filename="<ast>", mode="eval"), context
                 )
             print(f"Tested preconditions: {len(conditions)}")
 
-        result = action[1]["executor"](**parameters)
+        # Execute action
+        action[1]["executor"](**parameters)
 
-        for _, conditions in post_conditions.items():
+        for i, (_, conditions) in enumerate(post_conditions.items()):
             for condition, value in conditions:
-                result = eval(  # pylint: disable=eval-used
+                actual = eval(  # pylint: disable=eval-used
                     compile(condition, filename="<ast>", mode="eval"), context
                 )
+                expected = eval(  # pylint: disable=eval-used
+                    compile(value, filename="<ast>", mode="eval"), context
+                )
+
+                if actual != expected and not dry_run:
+                    raise RuntimeError(
+                        f"Postcondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
+                    )
             print(f"Tested postconditions: {len(conditions)}")
