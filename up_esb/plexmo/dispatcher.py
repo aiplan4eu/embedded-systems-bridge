@@ -173,6 +173,7 @@ class PlanDispatcher:
         preconditions = action[1]["preconditions"]
         post_conditions = action[1]["postconditions"]
         context = action[1]["context"]
+        executor = context[action[1]["action"]]
 
         # Execution options
         dry_run = self._options.get("dry_run", False)
@@ -194,7 +195,7 @@ class PlanDispatcher:
                 print(f"Evaluated {len(conditions)} preconditions ...")
 
         # Execute action
-        action[1]["executor"](**parameters)
+        executor(**parameters)
 
         for i, (_, conditions) in enumerate(post_conditions.items()):
             for condition, value in conditions:

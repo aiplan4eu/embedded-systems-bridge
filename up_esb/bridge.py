@@ -361,10 +361,10 @@ class Bridge:
         executable_graph = plan_to_dependency_graph(plan)
 
         # Add elements and functions as a context for the executable graph
-        global_context = {}
-        global_context.update(self._api_objects)
-        global_context.update(self._api_actions)
-        global_context.update(self._fluent_functions)
+        context = {}
+        context.update(self._api_objects)
+        context.update(self._api_actions)
+        context.update(self._fluent_functions)
 
         for node in executable_graph.nodes(data=True):
             node_id = node[0]
@@ -374,7 +374,6 @@ class Bridge:
                 continue  # TODO: Handle start and end nodes.
             if action not in self._api_actions:
                 raise ValueError(f"Action {action} not defined in API!")
-            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action)]
 
             # Parameters
             parameters = {}
@@ -420,6 +419,6 @@ class Bridge:
             executable_graph.nodes[node_id]["postconditions"] = executable_effects
 
             # Finally setup execution context to the nodes
-            executable_graph.nodes[node_id]["context"] = global_context
+            executable_graph.nodes[node_id]["context"] = context
 
         return executable_graph
