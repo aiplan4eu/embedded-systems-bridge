@@ -23,13 +23,17 @@ dependencies = [
   "matplotlib",
   "pydot",
 ]
-description = "General functionalities for using unified-planning in applications"
+description = "General functionalities for using unified-planning in robotic applications"
 keywords = ["unified-planning", "embedded-systems-bridge"]
 license = {text = "Apache-2.0 License"}
 name = "up_esb"
 readme = "README.md"
 requires-python = ">=3.8"
 version = "0.0.131"
+
+[project.urls]
+Repository = "https://github.com/aiplan4eu/embedded-systems-bridge"
+Homepage = "https://www.aiplan4eu-project.eu/"
 
 [project.optional-dependencies]
 dev = ["black", "pylint", "pytest", "pre-commit"]
