@@ -47,6 +47,7 @@ from unified_planning.plans import (
 )
 from unified_planning.shortcuts import BoolType, IntType, OneshotPlanner, RealType, UserType
 
+from up_esb.components import ExpressionManager
 from up_esb.components.graph import plan_to_dependency_graph
 
 
@@ -359,23 +360,65 @@ class Bridge:
         """Get executable graph from plan."""
         executable_graph = plan_to_dependency_graph(plan)
 
+        # Add elements and functions as a context for the executable graph
+        context = {}
+        context.update(self._api_objects)
+        context.update(self._api_actions)
+        context.update(self._fluent_functions)
+
         for node in executable_graph.nodes(data=True):
             node_id = node[0]
-            action_instance = node[1]["action"]
+            action = node[1]["action"]
             action_parameters = node[1]["parameters"]
-            if action_instance in ["start", "end"]:
+            if action in ["start", "end"]:
                 continue  # TODO: Handle start and end nodes.
-            if action_instance not in self._api_actions:
-                raise ValueError(f"Action {action_instance} not defined in API!")
-            executable_graph.nodes[node_id]["executor"] = self._api_actions[str(action_instance)]
+            if action not in self._api_actions:
+                raise ValueError(f"Action {action} not defined in API!")
 
             # Parameters
-            parameters = []
-            for param in action_parameters:
-                param = str(param)
-                if param not in self._api_objects:
-                    raise ValueError(f"Object {param} not defined in API!")
-                parameters.append(self._api_objects[str(param)])
-            executable_graph.nodes[node_id]["parameters"] = tuple(parameters)
+            parameters = {}
+            for param, actual_param in action_parameters.items():
+                actual_param = str(actual_param)
+                if actual_param not in self._api_objects:
+                    raise ValueError(f"Object {actual_param} not defined in API!")
+                parameters[param] = self._api_objects[str(actual_param)]
+            executable_graph.nodes[node_id]["parameters"] = parameters
+
+            exp_manager = ExpressionManager()
+
+            # Action Preconditions
+            executable_preconditions: Dict[str, List[Callable]] = {}
+            for interval, preconditions in executable_graph.nodes[node_id]["preconditions"].items():
+                # Interval is start for instantaneous actions, and (start, end) for timed actions.
+                executable_preconditions[interval] = (
+                    []
+                    if interval not in executable_preconditions
+                    else executable_preconditions[interval]
+                )
+
+                for precondition in preconditions:
+                    executable_preconditions[interval].append(
+                        exp_manager.convert(precondition, parameters=parameters)
+                    )
+            executable_graph.nodes[node_id]["preconditions"] = executable_preconditions
+
+            # Action Effects
+            executable_effects: Dict[str, List[Tuple[Callable, typing.Any]]] = {}
+            for interval, effects in executable_graph.nodes[node_id]["postconditions"].items():
+                executable_effects[interval] = (
+                    [] if interval not in executable_effects else executable_effects[interval]
+                )
+
+                for effect in effects:
+                    executable_effects[interval].append(
+                        (
+                            exp_manager.convert(effect.fluent, parameters=parameters),
+                            exp_manager.convert(effect.value, parameters=parameters),
+                        )
+                    )
+            executable_graph.nodes[node_id]["postconditions"] = executable_effects
+
+            # Finally setup execution context to the nodes
+            executable_graph.nodes[node_id]["context"] = context
 
         return executable_graph

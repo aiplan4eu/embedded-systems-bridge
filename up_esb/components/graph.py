@@ -26,7 +26,7 @@ from unified_planning.plans import (
     SequentialPlan,
     TimeTriggeredPlan,
 )
-from unified_planning.shortcuts import Fraction
+from unified_planning.shortcuts import DurativeAction, Fraction, InstantaneousAction
 
 
 def plan_to_dependency_graph(
@@ -59,13 +59,24 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
     for i, node in enumerate(nodes):
         node_map[node] = i
 
-    dependency_graph.add_node(node_map["end"], node_name="end", action="end", parameters=())
+    dependency_graph.add_node(
+        node_map["end"],
+        node_name="end",
+        action="end",
+        parameters={},
+        preconditions={},
+        postconditions={},
+    )
     for action, successors in plan.get_adjacency_list.items():
+        parameters, preconditions, postconditions = _process_action(action)
+
         dependency_graph.add_node(
             node_map[action],
             node_name=str(action),
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
+            preconditions=preconditions,
+            postconditions=postconditions,
         )
         # add edges to successors
         for succ in successors:
@@ -76,7 +87,14 @@ def _partial_order_plan_to_dependency_graph(plan: PartialOrderPlan) -> nx.DiGrap
 
     # add start node and edges to nodes without predecessors
     start_nodes = [node for node, in_degree in dependency_graph.in_degree() if in_degree == 0]
-    dependency_graph.add_node(node_map["start"], node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        node_map["start"],
+        node_name="start",
+        action="start",
+        parameters={},
+        preconditions={},
+        postconditions={},
+    )
     for node in start_nodes:
         dependency_graph.add_edge(node_map["start"], node)
 
@@ -87,20 +105,32 @@ def _sequential_plan_to_dependency_graph(plan: SequentialPlan) -> nx.DiGraph:
     """Convert UP Sequential Plan to Dependency Graph."""
     dependency_graph = nx.DiGraph()
     parent_id = 0
-    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        parent_id,
+        node_name="start",
+        action="start",
+        parameters={},
+        preconditions={},
+        postconditions={},
+    )
     for i, action in enumerate(plan.actions):
+        parameters, preconditions, postconditions = _process_action(action)
         child_id = i + 1
         dependency_graph.add_node(
             child_id,
             node_name=str(action),
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
+            preconditions=preconditions,
+            postconditions=postconditions,
         )
         dependency_graph.add_edge(parent_id, child_id)
         parent_id = child_id
 
     child_id = parent_id + 1  # End node
-    dependency_graph.add_node(child_id, node_name="end", action="end", parameters=())
+    dependency_graph.add_node(
+        child_id, node_name="end", action="end", parameters={}, preconditions={}, postconditions={}
+    )
     dependency_graph.add_edge(parent_id, child_id)
     return dependency_graph
 
@@ -112,19 +142,35 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     next_parents: Set[Tuple[int, Fraction, ActionInstance, Optional[Fraction]]] = set()
 
     # Add all nodes
-    dependency_graph.add_node(parent_id, node_name="start", action="start", parameters=())
+    dependency_graph.add_node(
+        parent_id,
+        node_name="start",
+        action="start",
+        parameters={},
+        preconditions={},
+        postconditions={},
+    )
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
         duration = float(duration.numerator) / float(duration.denominator)
+        parameters, preconditions, postconditions = _process_action(action)
+
         dependency_graph.add_node(
             child_id,
             node_name=f"{str(action)}({duration})",
             action=action.action.name,
-            parameters=action.actual_parameters,
+            parameters=parameters,
+            preconditions=preconditions,
+            postconditions=postconditions,
         )
 
     dependency_graph.add_node(
-        len(plan.timed_actions) + 1, node_name="end", action="end", parameters=()
+        len(plan.timed_actions) + 1,
+        node_name="end",
+        action="end",
+        parameters={},
+        preconditions={},
+        postconditions={},
     )
 
     # Add all edges and durations
@@ -141,13 +187,17 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
 
                     next_parent_id = next_parent[0]
                     next_child_id = _get_node_id(dependency_graph, next_child_name)
+                    parameters, preconditions, postconditions = _process_action(next_action)
+
                     if next_child_id is None:
                         next_child_id = child_id + 1
                         dependency_graph.add_node(
                             next_child_id,
                             node_name=next_child_name,
                             action=next_action.action.name,
-                            parameters=next_action.actual_parameters,
+                            parameters=parameters,
+                            preconditions=preconditions,
+                            postconditions=postconditions,
                         )
                     dependency_graph.add_edge(next_parent_id, next_child_id)
                 next_parents = set()
@@ -168,3 +218,21 @@ def _get_node_id(dependency_graph: nx.DiGraph, name: str) -> Optional[int]:
             return node[0]
 
     return None
+
+
+def _process_action(action: ActionInstance) -> Tuple[dict, dict, dict]:
+    # Gather parameters
+    parameters = {}
+    for param, actual_param in zip(action.action.parameters, action.actual_parameters):
+        parameters[param.name] = actual_param
+
+    if isinstance(action.action, InstantaneousAction):
+        preconditions = {"start": action.action.preconditions}
+        postconditions = {"start": action.action.effects}
+
+        return parameters, preconditions, postconditions
+
+    elif isinstance(action.action, DurativeAction):
+        return parameters, action.action.conditions, action.action.effects
+
+    raise ValueError(f"Unknown action type {type(action.action)}")
