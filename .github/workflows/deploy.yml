@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  pull_request:
+    types: [closed] # Uncomment this line if you want to run this action only when the PR is closed
+
+jobs:
+  update_version:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Run Version Update Script
+        id: update_version
+        run: |
+          version=$(python3 .github/scripts/update_version.py)
+          if git diff --quiet HEAD^ HEAD; then
+            echo "No changes detected, exiting."
+            echo "::set-output name=status::no_changes"
+            exit 0
+          fi
+          echo "::set-output name=version::$version"
+
+      - name: Commit and Push Changes
+        if: steps.update_version.outputs.status != 'no_changes'
+        run: |
+          git checkout ${{ github.head_ref }}
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pyproject.toml
+          git commit -m "Update version to ${{ steps.update_version.outputs.version }}" --no-verify
+          git push origin
