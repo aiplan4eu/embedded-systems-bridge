@@ -25,10 +25,10 @@ jobs:
           version=$(python3 .github/scripts/update_version.py)
           if git diff --quiet HEAD^ HEAD; then
             echo "No changes detected, exiting."
-            echo "::set-output name=status::no_changes"
+            echo "status=no_changes" >> $GITHUB_OUTPUT
             exit 0
           fi
-          echo "::set-output name=version::$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Commit and Push Changes
         if: steps.update_version.outputs.status != 'no_changes'
