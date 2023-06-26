@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Plexmo for UP Bridge."""
-from up_esb.plexmo.dispatcher import PlanDispatcher, SequentialPlanDispatcher
+from up_esb.plexmo.dispatcher import PlanDispatcher
 from up_esb.plexmo.monitor import SequentialPlanMonitor
 
-__all__ = ["SequentialPlanDispatcher", "SequentialPlanMonitor", "PlanDispatcher"]
+__all__ = ["SequentialPlanMonitor", "PlanDispatcher"]

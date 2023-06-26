@@ -28,7 +28,7 @@ class ConditionStatus(Enum):
 class DispatcherStatus(Enum):
     """DispatcherStatus Enum"""
 
-    NOT_STARTED = auto()
+    IDLE = auto()
     STARTED = auto()
     IN_PROGRESS = auto()
     FAILED = auto()
