@@ -8,9 +8,10 @@ class ActionNodeStatus(Enum):
     NOT_STARTED = auto()
     STARTED = auto()
     IN_PROGRESS = auto()
-    DONE = auto()
+    SUCCEEDED = auto()
     FAILED = auto()
     SKIPPED = auto()
+    UNKNOWN = auto()
 
 
 class ConditionStatus(Enum):
@@ -19,7 +20,7 @@ class ConditionStatus(Enum):
     NOT_STARTED = auto()
     STARTED = auto()
     IN_PROGRESS = auto()
-    DONE = auto()
+    SUCCEEDED = auto()
     FAILED = auto()
     SKIPPED = auto()
     TIMEOUT = auto()
@@ -33,3 +34,14 @@ class DispatcherStatus(Enum):
     IN_PROGRESS = auto()
     FAILED = auto()
     FINISHED = auto()
+
+
+class MonitorStatus(Enum):
+    """MonitorStatus Enum"""
+
+    IDLE = auto()
+    STARTED = auto()
+    IN_PROGRESS = auto()
+    FAILED = auto()
+    FINISHED = auto()
+    TIMEOUT = auto()

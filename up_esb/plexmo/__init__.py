@@ -14,6 +14,6 @@
 
 """Plexmo for UP Bridge."""
 from up_esb.plexmo.dispatcher import PlanDispatcher
-from up_esb.plexmo.monitor import SequentialPlanMonitor
+from up_esb.plexmo.monitor import PlanMonitor
 
-__all__ = ["SequentialPlanMonitor", "PlanDispatcher"]
+__all__ = ["PlanMonitor", "PlanDispatcher"]

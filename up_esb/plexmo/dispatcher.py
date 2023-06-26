@@ -20,7 +20,8 @@
 """Dispatcher for executing plans."""
 import networkx as nx
 
-from up_esb.status import DispatcherStatus
+from up_esb.execution.executor import ActionResult, InstantaneousTaskExecutor
+from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus
 
 
 class PlanDispatcher:
@@ -33,6 +34,7 @@ class PlanDispatcher:
         self._replan_cb = None
         self._dispatched_position = 0
         self._options = None
+        self._executor = None
 
     def execute_plan(self, graph: nx.DiGraph, **options):
         """Execute the plan."""
@@ -40,50 +42,31 @@ class PlanDispatcher:
         self._graph = graph
         self._dispatched_position = 0
         self._options = options
-        replanned = False
-        last_failed_action = None
-        for node in self._graph.nodes(data=True):
-            if node[1]["node_name"] in ["start", "end"]:
-                continue  # skip start and end node
-            successors = list(self._graph.successors(node[0]))
-            if len(successors) > 1 and self._status != "failure":  # Assume as single action
-                # TODO: Handle multiple successors
-                print(f"Node {node[0]} has {len(successors)} successors: {successors}. Exiting!")
-                self._status = "failure"
-                return False
-            current_action = node
-            action_result = self._dispatch_cb(current_action)
-            if not action_result:
-                # TODO Move error handling into separate method
-                if last_failed_action != current_action:
-                    last_failed_action = current_action
-                    if not replanned and self._replan_cb:
-                        # replan once if an action fails for each action
-                        # TODO make replannig more flexible
-                        # (dependent on the action) and generic
-                        print("Action failed: Replanning once!")
-                        new_plan = self._replan_cb()
-                        if new_plan is not None:
-                            self._graph = new_plan
-                            self._dispatched_position = 0
-                            replanned = True
-                            continue
+
+        self._executor = InstantaneousTaskExecutor(dependency_graph=graph)
+        for node_id, node in self._graph.nodes(data=True):
+            if node["action"] in ["start", "end"]:
+                continue
+            result = self._executor.execute_action(node_id)
+
+            if self._check_result(result) is False:
                 self._status = DispatcherStatus.FAILED
-            else:
-                replanned = False
-                if last_failed_action == current_action:
-                    last_failed_action = None
-                # TODO:Check the below condition
-                if node[0] == "!replan":
-                    self._dispatched_position = 0
-                else:
-                    self._dispatched_position += 1
 
         if self._status != DispatcherStatus.FAILED:
             self._status = DispatcherStatus.FINISHED
             return True
 
         return False
+
+    def _check_result(self, result: ActionResult):
+        if (
+            result.precondition_status != ConditionStatus.SUCCEEDED
+            or result.action_status != ActionNodeStatus.SUCCEEDED
+            or result.postcondition_status != ConditionStatus.SUCCEEDED
+        ):
+            return False
+
+        return True
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.
