@@ -1,6 +1,15 @@
 # Embedded Systems Bridge
 
-This library provides general funcitonalities for using the [Unified Planning](https://github.com/aiplan4eu/unified-planning) library in robotic applications.
+This library provides general funcitonalities for using the [Unified Planning](https://github.com/aiplan4eu/unified-planning) library in robotic applications:
+- helper functions to map object representations in your application domain to the UP domain and vice versa, e.g., to retrieve executable actions from a generated UP plan
+- plan dispatchers for automated execution of action plans
+- plan monitoring for validating action execution and performing precondition checks on subsequent actions
+
+## Application examples
+
+To see the Embedded Systems Bridge in use, please refer to our related repositories:
+- [drone experiment](https://github.com/franklinselva/genom3-experiment/)
+- [pick-and-place robot environment](https://github.com/DFKI-NI/mobipick_labs)
 
 
 ## Pre-commit Hooks
