@@ -109,11 +109,22 @@ class ActionExecutor:
     def _check_preconditions(self, task_id):
         raise NotImplementedError
 
-    def _execute_action(self, task_id):
-        raise NotImplementedError
-
     def _check_postconditions(self, task_id):
         raise NotImplementedError
+
+    def _execute_action(self, task_id):
+        """Execute the given task."""
+        executor = self._context[self._action]
+
+        # TODO: Proper setup of task tracker
+        result = executor(**self._parameters)
+
+        if result is None:
+            return ActionNodeStatus.UNKNOWN
+        elif result:
+            return ActionNodeStatus.SUCCEEDED
+        elif result is False:
+            return ActionNodeStatus.FAILED
 
 
 class InstantaneousTaskExecutor(ActionExecutor):
@@ -140,19 +151,76 @@ class InstantaneousTaskExecutor(ActionExecutor):
         if self._verbose:
             print(f"Evaluated {len(conditions)} preconditions ...")
 
-    def _execute_action(self, task_id):
-        """Execute the given task."""
-        executor = self._context[self._action]
+    def _check_postconditions(self, task_id):
+        """Check postconditions of the given task."""
+        post_conditions = self._dependency_graph.nodes[task_id]["postconditions"]
 
-        # TODO: Proper setup of task tracker
-        result = executor(**self._parameters)
+        for i, (_, conditions) in enumerate(post_conditions.items()):
+            for condition, value in conditions:
+                actual = eval(  # pylint: disable=eval-used
+                    compile(condition, filename="<ast>", mode="eval"), self._context
+                )
+                expected = eval(  # pylint: disable=eval-used
+                    compile(value, filename="<ast>", mode="eval"), self._context
+                )
 
-        if result is None:
-            return ActionNodeStatus.UNKNOWN
-        elif result:
-            return ActionNodeStatus.SUCCEEDED
-        elif result is False:
-            return ActionNodeStatus.FAILED
+                if actual != expected and not self._dry_run:
+                    return RuntimeError(
+                        f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                    )
+            if self._verbose:
+                print(f"Evaluated {len(conditions)} postconditions ...")
+
+
+class TemporalTaskExecutor(ActionExecutor):
+    """Task executor that executes tasks Temporal Task."""
+
+    def __init__(self, dependency_graph: nx.DiGraph, **options):
+        super().__init__(dependency_graph=dependency_graph, **options)
+
+    def _check_preconditions(self, task_id):
+        """Check preconditions of the given task."""
+        conditions = self._dependency_graph.nodes[task_id]["preconditions"]
+
+        start_conditions = conditions["start"]
+        overall_conditions = conditions["overall"]
+        end_conditions = conditions["end"]
+
+        # Check start conditions
+        result = self._check_conditions(start_conditions)
+        if isinstance(result, Exception):
+            return result
+
+        # Check overall conditions
+        # Add threads for each overall condition
+        for i, condition in enumerate(overall_conditions):
+            thread = Thread(
+                target=self._check_conditions,
+                args=(condition,),
+                name=f"overall_condition_{i+1}",
+                daemon=True,
+            )
+            thread.start()
+
+        # Check end conditions
+        result = self._check_conditions(end_conditions)
+        if isinstance(result, Exception):
+            return result
+
+    def _check_conditions(self, conditions):
+        for i, condition in enumerate(conditions):
+            result = eval(  # pylint: disable=eval-used
+                compile(condition, filename="<ast>", mode="eval"), self._context
+            )
+
+            # Check if all preconditions return boolean True
+            if not result and not self._dry_run:
+                return RuntimeError(
+                    f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                )
+
+        if self._verbose:
+            print(f"Evaluated {len(conditions)} preconditions ...")
 
     def _check_postconditions(self, task_id):
         """Check postconditions of the given task."""
