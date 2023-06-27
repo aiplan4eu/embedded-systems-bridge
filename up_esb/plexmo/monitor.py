@@ -33,6 +33,8 @@ class PlanMonitor:
         """Return the status of the given action."""
         self._action_status = self._get_action_status(action_name)
 
+        return self._action_status
+
     def _get_action_status(self, action_name: str) -> ActionNodeStatus:
         """Return the status of the given action."""
         for _, node in self._graph.nodes(data=True):

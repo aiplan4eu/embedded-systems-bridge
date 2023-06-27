@@ -19,8 +19,9 @@
 # - Selvakumar H S, LAAS-CNRS
 """Dispatcher for executing plans."""
 import networkx as nx
+from unified_planning.plans import Plan, SequentialPlan, TimeTriggeredPlan
 
-from up_esb.execution.executor import ActionResult, InstantaneousTaskExecutor
+from up_esb.execution import ActionResult, InstantaneousTaskExecutor, TemporalTaskExecutor
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus
 
 
@@ -35,15 +36,23 @@ class PlanDispatcher:
         self._dispatched_position = 0
         self._options = None
         self._executor = None
+        self._plan = None
+        # TODO: Use the plan for plan repair, replanning, etc.
 
-    def execute_plan(self, graph: nx.DiGraph, **options):
+    def execute_plan(self, plan: Plan, graph: nx.DiGraph, **options):
         """Execute the plan."""
         self._status = DispatcherStatus.STARTED
         self._graph = graph
         self._dispatched_position = 0
         self._options = options
+        self._plan = plan
 
-        self._executor = InstantaneousTaskExecutor(dependency_graph=graph)
+        if isinstance(self._plan, SequentialPlan):
+            self._executor = InstantaneousTaskExecutor(dependency_graph=graph)
+        elif isinstance(self._plan, TimeTriggeredPlan):
+            self._executor = TemporalTaskExecutor(dependency_graph=graph)
+
+        self._executor = TemporalTaskExecutor(dependency_graph=graph)
         for node_id, node in self._graph.nodes(data=True):
             if node["action"] in ["start", "end"]:
                 continue
@@ -84,49 +93,5 @@ class PlanDispatcher:
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
 
-    def _default_dispatch_cb(self, action):
-        """Dispatch callback function."""
-        # TODO: Add verification of preconditions
-        parameters = action[1]["parameters"]
-        preconditions = action[1]["preconditions"]
-        post_conditions = action[1]["postconditions"]
-        context = action[1]["context"]
-        executor = context[action[1]["action"]]
-
-        # Execution options
-        dry_run = self._options.get("dry_run", False)
-        verbose = self._options.get("verbose", False)
-
-        # Preconditions
-        for i, (_, conditions) in enumerate(preconditions.items()):
-            for condition in conditions:
-                result = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval"), context
-                )
-
-                # Check if all preconditions return boolean True
-                if not result and not dry_run:
-                    raise RuntimeError(
-                        f"Precondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
-                    )
-            if verbose:
-                print(f"Evaluated {len(conditions)} preconditions ...")
-
-        # Execute action
-        executor(**parameters)
-
-        for i, (_, conditions) in enumerate(post_conditions.items()):
-            for condition, value in conditions:
-                actual = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval"), context
-                )
-                expected = eval(  # pylint: disable=eval-used
-                    compile(value, filename="<ast>", mode="eval"), context
-                )
-
-                if actual != expected and not dry_run:
-                    raise RuntimeError(
-                        f"Postcondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
-                    )
-            if verbose:
-                print(f"Evaluated {len(conditions)} postconditions ...")
+    def _default_dispatch_cb(self, node_id: str):
+        raise NotImplementedError

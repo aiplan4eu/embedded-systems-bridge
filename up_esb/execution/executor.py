@@ -3,6 +3,7 @@ from threading import Condition, Lock, Thread
 from typing import NamedTuple
 
 import networkx as nx
+from unified_planning.shortcuts import EndTiming, StartTiming, TimeInterval
 
 from up_esb.status import ActionNodeStatus, ConditionStatus
 
@@ -172,6 +173,7 @@ class InstantaneousTaskExecutor(ActionExecutor):
                 print(f"Evaluated {len(conditions)} postconditions ...")
 
 
+# TODO: Make preconditions and post conditions perform things in parallel since sharing same time interval
 class TemporalTaskExecutor(ActionExecutor):
     """Task executor that executes tasks Temporal Task."""
 
@@ -182,20 +184,29 @@ class TemporalTaskExecutor(ActionExecutor):
         """Check preconditions of the given task."""
         conditions = self._dependency_graph.nodes[task_id]["preconditions"]
 
-        start_conditions = conditions["start"]
-        overall_conditions = conditions["overall"]
-        end_conditions = conditions["end"]
+        start, end = StartTiming(), EndTiming()
+        start_interval, end_interval = TimeInterval(start, start), TimeInterval(end, end)
+        overall_interval = TimeInterval(start, end)
+        intervals = list(conditions.keys())
+        start_conditions = conditions[start_interval] if start_interval in intervals else []
+        overall_conditions = conditions[overall_interval] if overall_interval in intervals else []
+        end_conditions = conditions[end_interval] if end_interval in intervals else []
 
         # Check start conditions
-        result = self._check_conditions(start_conditions)
-        if isinstance(result, Exception):
-            return result
+        for i, condition in enumerate(start_conditions):
+            result = self._check_precondition(condition)
+
+            if not result:
+                return RuntimeError(
+                    f"Precondition (i+1) for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                )
 
         # Check overall conditions
         # Add threads for each overall condition
+        # TODO: Add failure handling for threads
         for i, condition in enumerate(overall_conditions):
             thread = Thread(
-                target=self._check_conditions,
+                target=self._check_precondition,
                 args=(condition,),
                 name=f"overall_condition_{i+1}",
                 daemon=True,
@@ -203,41 +214,67 @@ class TemporalTaskExecutor(ActionExecutor):
             thread.start()
 
         # Check end conditions
-        result = self._check_conditions(end_conditions)
-        if isinstance(result, Exception):
-            return result
+        for i, condition in enumerate(end_conditions):
+            result = self._check_precondition(condition)
 
-    def _check_conditions(self, conditions):
-        for i, condition in enumerate(conditions):
-            result = eval(  # pylint: disable=eval-used
-                compile(condition, filename="<ast>", mode="eval"), self._context
-            )
-
-            # Check if all preconditions return boolean True
-            if not result and not self._dry_run:
+            if not result:
                 return RuntimeError(
-                    f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                    f"Precondition (i+1) for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
-
-        if self._verbose:
-            print(f"Evaluated {len(conditions)} preconditions ...")
 
     def _check_postconditions(self, task_id):
+        conditions = self._dependency_graph.nodes[task_id]["postconditions"]
+
+        start, end = StartTiming(), EndTiming()
+        start_interval, end_interval = TimeInterval(start, start), TimeInterval(end, end)
+        overall_interval = TimeInterval(start, end)
+        intervals = list(conditions.keys())
+        start_conditions = conditions[start_interval] if start_interval in intervals else []
+        overall_conditions = conditions[overall_interval] if overall_interval in intervals else []
+        end_conditions = conditions[end_interval] if end_interval in intervals else []
+
+        # Check start conditions
+        for i, (condition, value) in enumerate(start_conditions):
+            result = self._check_postcondition(condition, value)
+
+            if not result:
+                return RuntimeError(
+                    f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                )
+
+        # Check overall conditions
+        for i, (condition, value) in enumerate(overall_conditions):
+            thread = Thread(
+                target=self._check_postcondition,
+                args=(condition, value),
+                name=f"overall_condition_{i+1}",
+                daemon=True,
+            )
+            thread.start()
+
+        # Check end conditions
+        for i, (condition, value) in enumerate(end_conditions):
+            result = self._check_postcondition(condition, value)
+
+            if not result:
+                return RuntimeError(
+                    f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                )
+
+    def _check_precondition(self, condition):
+        result = eval(  # pylint: disable=eval-used
+            compile(condition, filename="<ast>", mode="eval"), self._context
+        )
+
+        return result
+
+    def _check_postcondition(self, condition, value):
         """Check postconditions of the given task."""
-        post_conditions = self._dependency_graph.nodes[task_id]["postconditions"]
+        actual = eval(  # pylint: disable=eval-used
+            compile(condition, filename="<ast>", mode="eval"), self._context
+        )
+        expected = eval(  # pylint: disable=eval-used
+            compile(value, filename="<ast>", mode="eval"), self._context
+        )
 
-        for i, (_, conditions) in enumerate(post_conditions.items()):
-            for condition, value in conditions:
-                actual = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval"), self._context
-                )
-                expected = eval(  # pylint: disable=eval-used
-                    compile(value, filename="<ast>", mode="eval"), self._context
-                )
-
-                if actual != expected and not self._dry_run:
-                    return RuntimeError(
-                        f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
-                    )
-            if self._verbose:
-                print(f"Evaluated {len(conditions)} postconditions ...")
+        return actual == expected
