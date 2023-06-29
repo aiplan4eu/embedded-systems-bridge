@@ -62,25 +62,25 @@ class ExpressionManager:
                 assert len(exp.args) == 2
 
                 return ast.Compare(
-                    op=ast.Eq(),
+                    ops=[ast.Eq()],
                     left=self._map_expression(exp.args[0]),
-                    right=self._map_expression(exp.args[1]),
+                    comparators=[self._map_expression(exp.args[1])],
                 )
             elif exp.is_le():
                 assert len(exp.args) == 2
 
                 return ast.Compare(
-                    op=ast.LtE(),
+                    ops=[ast.LtE()],
                     left=self._map_expression(exp.args[0]),
-                    right=self._map_expression(exp.args[1]),
+                    comparators=[self._map_expression(exp.args[1])],
                 )
             elif exp.is_lt():
                 assert len(exp.args) == 2
 
                 return ast.Compare(
-                    op=ast.Lt(),
+                    ops=[ast.Lt()],
                     left=self._map_expression(exp.args[0]),
-                    right=self._map_expression(exp.args[1]),
+                    comparators=[self._map_expression(exp.args[1])],
                 )
 
             elif exp.is_constant():
