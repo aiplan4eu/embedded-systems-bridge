@@ -398,7 +398,7 @@ class Bridge:
 
                 for precondition in preconditions:
                     executable_preconditions[interval].append(
-                        exp_manager.convert(precondition, parameters=parameters)
+                        exp_manager.convert(precondition, parameters=action_parameters)
                     )
             executable_graph.nodes[node_id]["preconditions"] = executable_preconditions
 
@@ -412,8 +412,8 @@ class Bridge:
                 for effect in effects:
                     executable_effects[interval].append(
                         (
-                            exp_manager.convert(effect.fluent, parameters=parameters),
-                            exp_manager.convert(effect.value, parameters=parameters),
+                            exp_manager.convert(effect.fluent, parameters=action_parameters),
+                            exp_manager.convert(effect.value, parameters=action_parameters),
                         )
                     )
             executable_graph.nodes[node_id]["postconditions"] = executable_effects

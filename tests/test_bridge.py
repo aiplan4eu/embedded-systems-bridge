@@ -17,6 +17,7 @@ from typing import Callable, Dict
 import pytest
 from unified_planning.shortcuts import Equals, Not, OneshotPlanner
 
+from tests import ContextManager, get_example_plans
 from up_esb.bridge import Bridge
 from up_esb.components import ActionDefinition
 
@@ -481,3 +482,75 @@ class TestBridge:
             for action_instance in result.plan.actions:
                 print(action_instance)
             print("*** End of result ***")
+
+
+class TestBridgeExecutableGraph:
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_bridge_executable_graph(self, plan_name, plan):
+        bridge = Bridge()
+        ContextManager.plan = plan
+
+        bridge._api_actions = ContextManager.get_actions_context()
+        bridge._fluent_functions = ContextManager.get_fluents_context()
+        bridge._api_objects = ContextManager.get_objects_context()
+
+        bridge.get_executable_graph(plan)
+
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_bridge_executable_action(self, plan_name, plan):
+        bridge = Bridge()
+        ContextManager.plan = plan
+
+        bridge._api_actions = ContextManager.get_actions_context()
+        bridge._fluent_functions = ContextManager.get_fluents_context()
+        bridge._api_objects = ContextManager.get_objects_context()
+
+        graph = bridge.get_executable_graph(plan)
+
+        for _, node in graph.nodes(data=True):
+            if node["action"] in ["start", "end"]:
+                continue
+
+            node["context"][node["action"]](**node["parameters"])
+
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_bridge_executable_preconditions(self, plan_name, plan):
+        bridge = Bridge()
+        ContextManager.plan = plan
+
+        bridge._api_actions = ContextManager.get_actions_context()
+        bridge._fluent_functions = ContextManager.get_fluents_context()
+        bridge._api_objects = ContextManager.get_objects_context()
+
+        graph = bridge.get_executable_graph(plan)
+
+        for _, node in graph.nodes(data=True):
+            if node["action"] in ["start", "end"]:
+                continue
+            print(node["node_name"])
+
+            import ast
+
+            for preconditions in node["preconditions"].values():
+                for expression in preconditions:
+                    print(ast.dump(ast.parse(expression)))
+                    eval(compile(expression, "<ast>", "eval"), node["context"])
+
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_bridge_executable_postconditions(self, plan_name, plan):
+        bridge = Bridge()
+        ContextManager.plan = plan
+
+        bridge._api_actions = ContextManager.get_actions_context()
+        bridge._fluent_functions = ContextManager.get_fluents_context()
+        bridge._api_objects = ContextManager.get_objects_context()
+
+        graph = bridge.get_executable_graph(plan)
+
+        for _, node in graph.nodes(data=True):
+            if node["action"] in ["start", "end"]:
+                continue
+
+            for post_conditions in node["postconditions"].values():
+                for expression, _ in post_conditions:
+                    eval(compile(expression, "<ast>", "eval"), node["context"])
