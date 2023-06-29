@@ -58,7 +58,7 @@ class TaskExecutor:
 class ActionExecutor:
     """Base class for action executors."""
 
-    def __init__(self, dependency_graph: nx.DiGraph, **options):
+    def __init__(self, dependency_graph: nx.DiGraph, options: dict):
         self._dependency_graph = dependency_graph
         # Options
         self._options = options
@@ -131,8 +131,8 @@ class ActionExecutor:
 class InstantaneousTaskExecutor(ActionExecutor):
     """Task executor that executes tasks Instantaneous Task."""
 
-    def __init__(self, dependency_graph: nx.DiGraph, **options):
-        super().__init__(dependency_graph=dependency_graph, **options)
+    def __init__(self, dependency_graph: nx.DiGraph, options: dict):
+        super().__init__(dependency_graph=dependency_graph, options=options)
 
     def _check_preconditions(self, task_id):
         """Check preconditions of the given task."""
@@ -177,8 +177,8 @@ class InstantaneousTaskExecutor(ActionExecutor):
 class TemporalTaskExecutor(ActionExecutor):
     """Task executor that executes tasks Temporal Task."""
 
-    def __init__(self, dependency_graph: nx.DiGraph, **options):
-        super().__init__(dependency_graph=dependency_graph, **options)
+    def __init__(self, dependency_graph: nx.DiGraph, options: dict):
+        super().__init__(dependency_graph=dependency_graph, options=options)
 
     def _check_preconditions(self, task_id):
         """Check preconditions of the given task."""

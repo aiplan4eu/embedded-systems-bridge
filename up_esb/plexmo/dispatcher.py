@@ -48,11 +48,12 @@ class PlanDispatcher:
         self._plan = plan
 
         if isinstance(self._plan, SequentialPlan):
-            self._executor = InstantaneousTaskExecutor(dependency_graph=graph)
+            self._executor = InstantaneousTaskExecutor(dependency_graph=graph, options=options)
         elif isinstance(self._plan, TimeTriggeredPlan):
-            self._executor = TemporalTaskExecutor(dependency_graph=graph)
+            self._executor = TemporalTaskExecutor(dependency_graph=graph, options=options)
+        else:
+            raise NotImplementedError("Plan type not supported")
 
-        self._executor = TemporalTaskExecutor(dependency_graph=graph)
         for node_id, node in self._graph.nodes(data=True):
             if node["action"] in ["start", "end"]:
                 continue
@@ -60,12 +61,14 @@ class PlanDispatcher:
 
             if self._check_result(result) is False:
                 self._status = DispatcherStatus.FAILED
+            else:
+                self._status = DispatcherStatus.IN_PROGRESS
 
-        if self._status != DispatcherStatus.FAILED:
-            self._status = DispatcherStatus.FINISHED
-            return True
+        if self._status == DispatcherStatus.FAILED:
+            return False
 
-        return False
+        self._status = DispatcherStatus.FINISHED
+        return True
 
     def _check_result(self, result: ActionResult):
         if (
