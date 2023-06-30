@@ -13,24 +13,22 @@
 # limitations under the License.
 
 import pytest
-from unified_planning.plans import SequentialPlan
 
 from tests import ContextManager, get_example_plans
 from up_esb.bridge import Bridge
-from up_esb.execution import InstantaneousTaskExecutor
+from up_esb.execution import InstantaneousTaskExecutor, TemporalTaskExecutor
+from up_esb.status import ActionNodeStatus, ConditionStatus
 
 # pylint: disable=protected-access
 
 
-class TestInstantaneousTaskExecutor:
+class TestTaskExecutor:
     """Test the execution of instantaneous tasks."""
 
+    @pytest.mark.parametrize("TaskExecutor", [InstantaneousTaskExecutor, TemporalTaskExecutor])
     @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
-    def test_instantaneous_task_executor(self, plan_name, plan):
+    def test_instantaneous_task_executor(self, TaskExecutor, plan_name, plan):
         """Test the execution of instantaneous tasks."""
-
-        if not isinstance(plan, SequentialPlan):
-            pytest.skip(f"Skipping non-sequential plans {plan_name}")
 
         bridge = Bridge()
         ContextManager.plan = plan
@@ -39,10 +37,17 @@ class TestInstantaneousTaskExecutor:
         bridge._fluent_functions = ContextManager.get_fluents_context()
         graph = bridge.get_executable_graph(plan)
 
-        executor = InstantaneousTaskExecutor(graph, options={"verbose": True})
+        executor = TaskExecutor(graph, options={"verbose": True, "dry_run": True})
+
+        if not isinstance(plan, executor.supported_plan_kind):
+            pytest.skip(f"Skipping unsupported plan: {plan_name}")
 
         for node_id, node in graph.nodes(data=True):
             if node["action"] in ["start", "end"]:
                 continue
 
-            executor.execute_action(node_id)
+            result = executor.execute_action(node_id)
+
+            assert result.precondition_status == (ConditionStatus.SUCCEEDED, None), result
+            assert result.action_status == (ActionNodeStatus.SUCCEEDED, None), result
+            assert result.postcondition_status == (ConditionStatus.SUCCEEDED, None), result

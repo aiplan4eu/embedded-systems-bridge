@@ -3,6 +3,7 @@ from threading import Condition, Lock, Thread
 from typing import NamedTuple
 
 import networkx as nx
+from unified_planning.plans import SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import EndTiming, StartTiming, TimeInterval
 
 from up_esb.status import ActionNodeStatus, ConditionStatus
@@ -69,6 +70,13 @@ class ActionExecutor:
         self._node_name = None
         self._parameters = None
 
+        self._supported_plan_kind = None
+
+    @property
+    def supported_plan_kind(self):
+        """Supported plan kind."""
+        raise NotImplementedError
+
     def execute_action(self, task_id):
         """Execute the given task."""
         self._context = self._dependency_graph.nodes[task_id]["context"]
@@ -134,13 +142,23 @@ class InstantaneousTaskExecutor(ActionExecutor):
     def __init__(self, dependency_graph: nx.DiGraph, options: dict):
         super().__init__(dependency_graph=dependency_graph, options=options)
 
+        self._supported_plan_kind = SequentialPlan
+
+    @property
+    def supported_plan_kind(self):
+        """Supported plan kind."""
+        return self._supported_plan_kind
+
     def _check_preconditions(self, task_id):
         """Check preconditions of the given task."""
         conditions = self._dependency_graph.nodes[task_id]["preconditions"]["start"]
 
         for i, condition in enumerate(conditions):
-            result = eval(  # pylint: disable=eval-used
-                compile(condition, filename="<ast>", mode="eval"), self._context
+            result = (
+                eval(  # pylint: disable=eval-used
+                    compile(condition, filename="<ast>", mode="eval"), self._context
+                )
+                or self._dry_run
             )
 
             # Check if all preconditions return boolean True
@@ -151,6 +169,8 @@ class InstantaneousTaskExecutor(ActionExecutor):
 
         if self._verbose:
             print(f"Evaluated {len(conditions)} preconditions ...")
+
+        return ConditionStatus.SUCCEEDED, None
 
     def _check_postconditions(self, task_id):
         """Check postconditions of the given task."""
@@ -169,8 +189,10 @@ class InstantaneousTaskExecutor(ActionExecutor):
                     return RuntimeError(
                         f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                     )
-            if self._verbose:
-                print(f"Evaluated {len(conditions)} postconditions ...")
+        if self._verbose:
+            print(f"Evaluated {len(post_conditions)} postconditions ...")
+
+        return ConditionStatus.SUCCEEDED, None
 
 
 # TODO: Make preconditions and post conditions perform things in parallel since sharing same time interval
@@ -179,6 +201,13 @@ class TemporalTaskExecutor(ActionExecutor):
 
     def __init__(self, dependency_graph: nx.DiGraph, options: dict):
         super().__init__(dependency_graph=dependency_graph, options=options)
+
+        self._supported_plan_kind = TimeTriggeredPlan
+
+    @property
+    def supported_plan_kind(self):
+        """Supported plan kind."""
+        return self._supported_plan_kind
 
     def _check_preconditions(self, task_id):
         """Check preconditions of the given task."""
@@ -194,11 +223,11 @@ class TemporalTaskExecutor(ActionExecutor):
 
         # Check start conditions
         for i, condition in enumerate(start_conditions):
-            result = self._check_precondition(condition)
+            result = self._check_precondition(condition) or self._dry_run
 
             if not result:
                 return RuntimeError(
-                    f"Precondition (i+1) for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                    f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
 
         # Check overall conditions
@@ -215,12 +244,14 @@ class TemporalTaskExecutor(ActionExecutor):
 
         # Check end conditions
         for i, condition in enumerate(end_conditions):
-            result = self._check_precondition(condition)
+            result = self._check_precondition(condition) or self._dry_run
 
             if not result:
                 return RuntimeError(
-                    f"Precondition (i+1) for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                    f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
+
+        return ConditionStatus.SUCCEEDED, None
 
     def _check_postconditions(self, task_id):
         conditions = self._dependency_graph.nodes[task_id]["postconditions"]
@@ -235,7 +266,7 @@ class TemporalTaskExecutor(ActionExecutor):
 
         # Check start conditions
         for i, (condition, value) in enumerate(start_conditions):
-            result = self._check_postcondition(condition, value)
+            result = self._check_postcondition(condition, value) or self._dry_run
 
             if not result:
                 return RuntimeError(
@@ -254,12 +285,14 @@ class TemporalTaskExecutor(ActionExecutor):
 
         # Check end conditions
         for i, (condition, value) in enumerate(end_conditions):
-            result = self._check_postcondition(condition, value)
+            result = self._check_postcondition(condition, value) or self._dry_run
 
             if not result:
                 return RuntimeError(
                     f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
+
+        return ConditionStatus.SUCCEEDED, None
 
     def _check_precondition(self, condition):
         result = eval(  # pylint: disable=eval-used
