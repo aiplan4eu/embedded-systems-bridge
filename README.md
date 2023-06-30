@@ -8,11 +8,21 @@ This library provides general funcitonalities for using the [Unified Planning](h
 ## Application examples
 
 To see the Embedded Systems Bridge in use, please refer to our related repositories:
-- [drone experiment](https://github.com/franklinselva/genom3-experiment/)
-- [pick-and-place robot environment](https://github.com/DFKI-NI/mobipick_labs)
+- [drone experiment](https://github.com/franklinselva/genom3-experiment/)[GenoM3-Pocolibs, Gazebo]
+- [pick-and-place robot environment](https://github.com/DFKI-NI/mobipick_labs) [ROS1 Noetic, Gazebo]
+
+## Installation
+
+To install the library, clone the repository and install it using pip:
+
+```bash
+python3 -m pip install up-esb
+```
+
+The above command will install the bridge with `unified-planning` as a dependency. If you already have `unified-planning` installed, you may want to uninstall it first to avoid version conflicts.
 
 
-## Pre-commit Hooks
+## Development
 
 
 This repo has [pre-commit](https://pre-commit.com/) configurations. You can use this locally and set it up to run automatically before you commit something. To install, use pip:
