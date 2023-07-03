@@ -19,7 +19,7 @@
 # - Selvakumar H S, LAAS-CNRS
 """Dispatcher for executing plans."""
 import networkx as nx
-from unified_planning.plans import Plan, SequentialPlan, TimeTriggeredPlan
+from unified_planning.plans import Plan
 
 from up_esb.execution import ActionExecutor, ActionResult
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus
@@ -32,7 +32,7 @@ class PlanDispatcher:
         self._graph = None
         self._status = DispatcherStatus.IDLE
         self._dispatch_cb = self._default_dispatch_cb
-        self._replan_cb = None
+        self._replan_cb = self._default_replan_cb
         self._dispatched_position = 0
         self._options = None
         self._executor = None
@@ -56,11 +56,12 @@ class PlanDispatcher:
             result = self._executor.execute_action(node_id)
 
             if self._check_result(result) is False:
+                # TODO: Replan
                 self._status = DispatcherStatus.FAILED
             else:
                 self._status = DispatcherStatus.IN_PROGRESS
 
-        if self._status == DispatcherStatus.FAILED:
+        if self._status == DispatcherStatus.FAILED and self._replan_cb is not None:
             return False
 
         self._status = DispatcherStatus.FINISHED
@@ -94,4 +95,9 @@ class PlanDispatcher:
         self._replan_cb = callback
 
     def _default_dispatch_cb(self, node_id: str):
+        # TODO: Involve with monitoring and logging
+        raise NotImplementedError
+
+    def _default_replan_cb(self):
+        # TODO: Involve with monitoring and logging
         raise NotImplementedError
