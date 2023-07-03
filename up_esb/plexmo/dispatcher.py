@@ -21,7 +21,7 @@
 import networkx as nx
 from unified_planning.plans import Plan, SequentialPlan, TimeTriggeredPlan
 
-from up_esb.execution import ActionResult, InstantaneousTaskExecutor, TemporalTaskExecutor
+from up_esb.execution import ActionExecutor, ActionResult
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus
 
 
@@ -47,12 +47,8 @@ class PlanDispatcher:
         self._options = options
         self._plan = plan
 
-        if isinstance(self._plan, SequentialPlan):
-            self._executor = InstantaneousTaskExecutor(dependency_graph=graph, options=options)
-        elif isinstance(self._plan, TimeTriggeredPlan):
-            self._executor = TemporalTaskExecutor(dependency_graph=graph, options=options)
-        else:
-            raise NotImplementedError("Plan type not supported")
+        self._executor = ActionExecutor(graph, options=options)
+        self._executor = self._executor.get_executor(plan)
 
         for node_id, node in self._graph.nodes(data=True):
             if node["action"] in ["start", "end"]:
@@ -88,6 +84,7 @@ class PlanDispatcher:
         """
         self._dispatch_cb = callback
 
+    @property
     def status(self) -> str:
         """Return the current status of the dispatcher."""
         return self._status

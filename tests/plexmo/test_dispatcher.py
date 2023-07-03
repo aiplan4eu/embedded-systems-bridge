@@ -47,5 +47,5 @@ class TestDispatcher:
         graph = bridge.get_executable_graph(plan)
 
         dispatcher = PlanDispatcher()
-        dispatcher.execute_plan(plan, graph, dry_run=True)
-        assert dispatcher.status() == DispatcherStatus.FINISHED
+        dispatcher.execute_plan(plan, graph, verbose=True, dry_run=True)
+        assert dispatcher.status == DispatcherStatus.FINISHED
