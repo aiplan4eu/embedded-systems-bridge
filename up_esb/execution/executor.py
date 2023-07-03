@@ -3,7 +3,7 @@ from threading import Condition, Lock, Thread
 from typing import NamedTuple
 
 import networkx as nx
-from unified_planning.plans import SequentialPlan, TimeTriggeredPlan
+from unified_planning.plans import Plan, SequentialPlan, TimeTriggeredPlan
 from unified_planning.shortcuts import EndTiming, StartTiming, TimeInterval
 
 from up_esb.status import ActionNodeStatus, ConditionStatus
@@ -72,6 +72,15 @@ class ActionExecutor:
 
         self._supported_plan_kind = None
 
+    def get_executor(self, plan: Plan):
+        """Get the executor for the given plan."""
+        if isinstance(plan, SequentialPlan):
+            return InstantaneousTaskExecutor(self._dependency_graph, self._options)
+        elif isinstance(plan, TimeTriggeredPlan):
+            return TemporalTaskExecutor(self._dependency_graph, self._options)
+        else:
+            raise NotImplementedError("Plan type not supported")
+
     @property
     def supported_plan_kind(self):
         """Supported plan kind."""
@@ -93,7 +102,7 @@ class ActionExecutor:
             action_status = ActionNodeStatus.FAILED, result
             return ActionResult(precondition_status, action_status, postcondition_status, result)
         elif result:
-            precondition_status = ConditionStatus.SUCCEEDED, None
+            precondition_status = ConditionStatus.SUCCEEDED
 
         # Execute action
         action_status = self._execute_action(task_id)
@@ -102,7 +111,7 @@ class ActionExecutor:
             result = RuntimeError(f"Action {self._action} failed with error: {action_status}")
             return ActionResult(precondition_status, action_status, postcondition_status, result)
         elif action_status:
-            action_status = ActionNodeStatus.SUCCEEDED, None
+            action_status = ActionNodeStatus.SUCCEEDED
 
         # Check postconditions
         result = self._check_postconditions(task_id)
@@ -111,9 +120,9 @@ class ActionExecutor:
             action_status = ActionNodeStatus.FAILED, result
             return ActionResult(precondition_status, action_status, postcondition_status, result)
         elif result:
-            postcondition_status = ConditionStatus.SUCCEEDED, None
+            postcondition_status = ConditionStatus.SUCCEEDED
 
-        return ActionResult(precondition_status, action_status, postcondition_status, result)
+        return ActionResult(precondition_status, action_status, postcondition_status, None)
 
     def _check_preconditions(self, task_id):
         raise NotImplementedError
@@ -170,7 +179,7 @@ class InstantaneousTaskExecutor(ActionExecutor):
         if self._verbose:
             print(f"Evaluated {len(conditions)} preconditions ...")
 
-        return ConditionStatus.SUCCEEDED, None
+        return ConditionStatus.SUCCEEDED
 
     def _check_postconditions(self, task_id):
         """Check postconditions of the given task."""
@@ -192,7 +201,7 @@ class InstantaneousTaskExecutor(ActionExecutor):
         if self._verbose:
             print(f"Evaluated {len(post_conditions)} postconditions ...")
 
-        return ConditionStatus.SUCCEEDED, None
+        return ConditionStatus.SUCCEEDED
 
 
 # TODO: Make preconditions and post conditions perform things in parallel since sharing same time interval
@@ -251,7 +260,7 @@ class TemporalTaskExecutor(ActionExecutor):
                     f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
 
-        return ConditionStatus.SUCCEEDED, None
+        return ConditionStatus.SUCCEEDED
 
     def _check_postconditions(self, task_id):
         conditions = self._dependency_graph.nodes[task_id]["postconditions"]
@@ -292,7 +301,7 @@ class TemporalTaskExecutor(ActionExecutor):
                     f"Postcondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
 
-        return ConditionStatus.SUCCEEDED, None
+        return ConditionStatus.SUCCEEDED
 
     def _check_precondition(self, condition):
         result = eval(  # pylint: disable=eval-used

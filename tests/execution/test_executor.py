@@ -16,7 +16,7 @@ import pytest
 
 from tests import ContextManager, get_example_plans
 from up_esb.bridge import Bridge
-from up_esb.execution import InstantaneousTaskExecutor, TemporalTaskExecutor
+from up_esb.execution import ActionExecutor
 from up_esb.status import ActionNodeStatus, ConditionStatus
 
 # pylint: disable=protected-access
@@ -25,9 +25,8 @@ from up_esb.status import ActionNodeStatus, ConditionStatus
 class TestTaskExecutor:
     """Test the execution of instantaneous tasks."""
 
-    @pytest.mark.parametrize("TaskExecutor", [InstantaneousTaskExecutor, TemporalTaskExecutor])
     @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
-    def test_instantaneous_task_executor(self, TaskExecutor, plan_name, plan):
+    def test_instantaneous_task_executor(self, plan_name, plan):
         """Test the execution of instantaneous tasks."""
 
         bridge = Bridge()
@@ -37,7 +36,8 @@ class TestTaskExecutor:
         bridge._fluent_functions = ContextManager.get_fluents_context()
         graph = bridge.get_executable_graph(plan)
 
-        executor = TaskExecutor(graph, options={"verbose": True, "dry_run": True})
+        executor = ActionExecutor(graph, options={"verbose": True, "dry_run": True})
+        executor = executor.get_executor(plan)
 
         if not isinstance(plan, executor.supported_plan_kind):
             pytest.skip(f"Skipping unsupported plan: {plan_name}")
@@ -48,6 +48,7 @@ class TestTaskExecutor:
 
             result = executor.execute_action(node_id)
 
-            assert result.precondition_status == (ConditionStatus.SUCCEEDED, None), result
-            assert result.action_status == (ActionNodeStatus.SUCCEEDED, None), result
-            assert result.postcondition_status == (ConditionStatus.SUCCEEDED, None), result
+            assert result.precondition_status == ConditionStatus.SUCCEEDED
+            assert result.action_status == ActionNodeStatus.SUCCEEDED
+            assert result.postcondition_status == ConditionStatus.SUCCEEDED
+            assert result.result is None
