@@ -59,38 +59,38 @@ class Robot:
     distance_optimized = False
     locations_inspected = []
 
-    def __init__(self):
-        self.l_from = ""
-        self.l_to = ""
-
-    def move(self, l_from: Location, l_to: Location):
+    @classmethod
+    def move(cls, l_from: Location, l_to: Location):
         """Move the robot from one location to another."""
 
-        self.l_from, self.l_to = l_from, l_to
-        print(f"Moving from {self.l_from} to {self.l_to}")
-        Robot.location = self.l_to
+        print(f"Moving from {l_from} to {l_to}")
+        Robot.location = l_to
 
         return True
 
-    def survey(self, area: Area, l_from: Location):
+    @classmethod
+    def survey(cls, area: Area, l_from: Location):
         """Survey the area from a location."""
         print(f"Surveying area {area} from location {l_from}")
         Robot.surveyed = True
         return True
 
-    def send_info(self):
+    @classmethod
+    def send_info(cls):
         """Send the information to the base station."""
         print("Sending information to the base station")
         Robot.plates = True
         return True
 
-    def acquire_plates_order(self):
+    @classmethod
+    def acquire_plates_order(cls):
         """Send the information to the base station."""
         print("Acquiring plates order")
         Robot.distance_optimized = True
         return True
 
-    def inspect_plate(self, l: Location):
+    @classmethod
+    def inspect_plate(cls, l: Location):
         """Inspect the plate at a location."""
         print(f"Inspecting plate at location {l}")
         Robot.locations_inspected.append(l)
@@ -100,22 +100,22 @@ class Robot:
 # Fluent definitions
 def robot_at_fun(l: Location):
     """Check if the robot is at a location."""
-    return Robot().location == l
+    return Robot.location == l
 
 
 def is_surveyed_fun():
     """Check if the area is surveyed."""
-    return Robot().surveyed
+    return Robot.surveyed
 
 
 def has_plates_fun():
     """Check if the robot has plates."""
-    return Robot().plates
+    return Robot.plates
 
 
 def is_distance_optimized_fun():
     """Check if the robot has plates."""
-    return Robot().distance_optimized
+    return Robot.distance_optimized
 
 
 def is_base_station_fun(l: Location):
@@ -125,19 +125,18 @@ def is_base_station_fun(l: Location):
 
 def is_location_inspected_fun(l: Location):
     """Check if the robot is at a location."""
-    return l in Robot().locations_inspected
+    return l in Robot.locations_inspected
 
 
 def is_plate_inspected_fun(l: Location):
     """Check if the robot is at a location."""
-    return l in Robot().locations_inspected
+    return l in Robot.locations_inspected
 
 
 def define_problem():
     """Create a simple station verification application"""
 
     bridge = Bridge()
-    r = Robot()
 
     bridge.create_types([Location, Area, Robot])
 
@@ -151,7 +150,7 @@ def define_problem():
     is_plate_inspected = bridge.create_fluent_from_function(is_plate_inspected_fun)
 
     # Default objects
-    robot = bridge.create_object("r1", r)
+    robot = bridge.create_object("r1", Robot())
     l1 = bridge.create_object("l1", Location("l1"))
     l2 = bridge.create_object("l2", Location("l2"))
     l3 = bridge.create_object("l3", Location("l3"))
@@ -162,20 +161,20 @@ def define_problem():
 
     # Action definitions
     survey, [area, l_from] = bridge.create_action(
-        "survey", _callable=r.survey, area=Area, l_from=Location, duration=10
+        "survey", _callable=Robot.survey, area=Area, l_from=Location, duration=10
     )
     survey.add_condition(StartTiming(), Not(is_surveyed()))
     survey.add_condition(StartTiming(), is_base_station(l_from))
     survey.add_condition(StartTiming(), Not(has_plates()))
     survey.add_effect(EndTiming(), is_surveyed(), True)
 
-    send_info, [] = bridge.create_action("send_info", _callable=r.send_info)
+    send_info, [] = bridge.create_action("send_info", _callable=Robot.send_info)
     send_info.add_precondition(is_surveyed())
     send_info.add_precondition(Not(has_plates()))
     send_info.add_effect(has_plates(), True)
 
     move, [l_from, l_to] = bridge.create_action(
-        "move", _callable=r.move, l_from=Location, l_to=Location, duration=1
+        "move", _callable=Robot.move, l_from=Location, l_to=Location, duration=1
     )
     move.add_condition(StartTiming(), robot_at(l_from))
     move.add_condition(StartTiming(), Not(robot_at(l_to)))
@@ -185,14 +184,14 @@ def define_problem():
     move.add_effect(EndTiming(), robot_at(l_to), True)
 
     acquire_plates_order, [] = bridge.create_action(
-        "acquire_plates_order", _callable=r.acquire_plates_order
+        "acquire_plates_order", _callable=Robot.acquire_plates_order
     )
     acquire_plates_order.add_precondition(has_plates())
     acquire_plates_order.add_precondition(Not(is_distance_optimized()))
     acquire_plates_order.add_effect(is_distance_optimized(), True)
 
     inspect_plate, [l] = bridge.create_action(
-        "inspect_plate", _callable=r.inspect_plate, l=Location, duration=2
+        "inspect_plate", _callable=Robot.inspect_plate, l=Location, duration=2
     )
     inspect_plate.add_condition(StartTiming(), robot_at(l))
     inspect_plate.add_condition(StartTiming(), has_plates())
