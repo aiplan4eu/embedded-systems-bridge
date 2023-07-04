@@ -58,9 +58,7 @@ def define_problem():
     move.add_effect(robot_at(l_to), True)
     move.add_effect(visited(l_to), True)
 
-    survey, [a] = bridge.create_action(  # pylint: disable=unused-variable
-        "Survey", _callable=Robot.survey, area=Area
-    )
+    survey, [_] = bridge.create_action("Survey", _callable=Robot.survey, area=Area)
     survey.add_effect(is_surveyed(), True)
 
     send_info, [l] = bridge.create_action("SendInfo", _callable=Robot.send_info, location=Location)
@@ -98,7 +96,7 @@ def main():
     up.shortcuts.get_environment().credits_stream = None
     bridge, problem = define_problem()
 
-    plan = bridge.solve(problem)  # By default, choses a planner based on its problemkind
+    plan = bridge.solve(problem)  # By default, chooses a planner based on its problem.kind
     print("*" * 10)
     print("* Plan *")
     for action in plan.actions:

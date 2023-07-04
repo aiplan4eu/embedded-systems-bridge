@@ -72,12 +72,12 @@ class Robot:
         Robot.l_to = location
 
 
-def robot_at_fun(l: Location):  # pylint: disable=unused-argument
+def robot_at_fun(l: Location):
     """Check if the robot is at the location."""
     return Robot.location == l
 
 
-def visited_fun(l: Location):  # pylint: disable=unused-argument
+def visited_fun(l: Location):
     """Check if the location is visited."""
     return Robot.location == l
 
@@ -87,7 +87,7 @@ def is_surveyed_fun():
     return True
 
 
-def info_sent_fun(l: Location):  # pylint: disable=unused-argument
+def info_sent_fun(_: Location):
     """Send info about the location."""
     return True
 
@@ -110,7 +110,7 @@ def define_problem():
     l2 = bridge.create_object("l2", Location("l2"))
     l3 = bridge.create_object("l3", Location("l3"))
     l4 = bridge.create_object("l4", Location("l4"))
-    area = bridge.create_object("area", Area(0, 10, 0, 10))  # pylint: disable=unused-variable
+    _ = bridge.create_object("area", Area(0, 10, 0, 10))
 
     move, [l_from, l_to] = bridge.create_action(
         "Move", _callable=Robot.move, l_from=Location, l_to=Location, duration=5
@@ -122,9 +122,7 @@ def define_problem():
     move.add_effect(EndTiming(), robot_at(l_to), True)
     move.add_effect(EndTiming(), visited(l_to), True)
 
-    survey, [a] = bridge.create_action(  # pylint: disable=unused-variable
-        "Survey", _callable=Robot.survey, area=Area, duration=5
-    )
+    survey, [_] = bridge.create_action("Survey", _callable=Robot.survey, area=Area, duration=5)
     survey.add_effect(EndTiming(), is_surveyed(), True)
 
     send_info, [l] = bridge.create_action("SendInfo", _callable=Robot.send_info, location=Location)

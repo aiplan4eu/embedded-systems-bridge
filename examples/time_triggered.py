@@ -79,17 +79,17 @@ def light_fun():
     return TemporalActions.match is not None
 
 
-def match_used_fun(m: Match):  # pylint: disable=unused-argument
+def match_used_fun(m: Match):
     """Check if match is used."""
     return TemporalActions.match == m
 
 
-def fuse_mended_fun(f: Fuse):  # pylint: disable=unused-argument
+def fuse_mended_fun(f: Fuse):
     """Fuse mended?"""
     return TemporalActions.fuse == f
 
 
-def light_match_fun(m: Match):  # pylint: disable=unused-argument
+def light_match_fun(m: Match):
     """Light match?"""
     return TemporalActions.match == m
 
@@ -164,7 +164,7 @@ def main():
         graph_executor, dry_run=True
     )  # Dry run condition checks since temporal evaluation is not supported yet
 
-    # TODO: Add visulization
+    # TODO: Add visualization
 
 
 if __name__ == "__main__":
