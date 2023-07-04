@@ -45,7 +45,8 @@ class Executor:
                 self._execute_coroutines(successors)
             else:
                 parameters = node[1]["parameters"]
-                result = node[1]["executor"](*parameters)
+                executor = node[1]["context"][node[1]["action"]]
+                result = executor(**parameters)
 
         return result
 
@@ -53,7 +54,8 @@ class Executor:
         # TODO: Better implementation
         # FIXME: Duplicate execution of actions
         parameters = action[1]["parameters"]
-        result = action[1]["executor"](*parameters)
+        executor = action[1]["context"][action[1]["action"]]
+        result = executor(**parameters)
 
         return result
 

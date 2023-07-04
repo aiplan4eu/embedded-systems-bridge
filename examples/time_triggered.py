@@ -15,8 +15,6 @@
 
 import time
 
-import matplotlib.pyplot as plt
-import networkx as nx
 import unified_planning as up
 from unified_planning.model import EndTiming, StartTiming
 from unified_planning.shortcuts import ClosedTimeInterval, Not
@@ -52,7 +50,8 @@ class TemporalActions:
     m = None
     f = None
 
-    def light_match(self, m: Match):
+    @classmethod
+    def light_match(cls, m: Match):
         """Light match action."""
         TemporalActions.m = m
 
@@ -60,7 +59,8 @@ class TemporalActions:
         time.sleep(5)
         return True
 
-    def mend_fuse(self, f: Fuse):
+    @classmethod
+    def mend_fuse(cls, f: Fuse):
         """Mend fuse action."""
         TemporalActions.f = f
 
@@ -71,34 +71,33 @@ class TemporalActions:
 
 def handsfree_fun():
     """Check if hands are free."""
-    return TemporalActions().m is None and TemporalActions().f is None
+    return TemporalActions.m is None and TemporalActions.f is None
 
 
 def light_fun():
     """Check if lighted."""
-    return TemporalActions().m is not None
+    return TemporalActions.m is not None
 
 
 def match_used_fun(m: Match):  # pylint: disable=unused-argument
     """Check if match is used."""
-    return TemporalActions().m == m
+    return TemporalActions.m == m
 
 
 def fuse_mended_fun(f: Fuse):  # pylint: disable=unused-argument
     """Fuse mended?"""
-    return TemporalActions().f == f
+    return TemporalActions.f == f
 
 
 def light_match_fun(m: Match):  # pylint: disable=unused-argument
     """Light match?"""
-    return TemporalActions().m == m
+    return TemporalActions.m == m
 
 
 #################### 2. Define the problem ####################
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
-    actions = TemporalActions()
 
     bridge.create_types([Match, Fuse])
 
@@ -115,7 +114,7 @@ def define_problem():
     m3 = bridge.create_object("m3", Match("m3"))
 
     light_match, [m] = bridge.create_action(
-        "LightMatch", _callable=actions.light_match, m=Match, duration=5
+        "LightMatch", _callable=TemporalActions.light_match, m=Match, duration=5
     )
     light_match.add_condition(StartTiming(), Not(match_used(m)))
     light_match.add_effect(StartTiming(), match_used(m), True)
@@ -123,7 +122,7 @@ def define_problem():
     light_match.add_effect(EndTiming(), light, False)
 
     mend_fuse, [f] = bridge.create_action(
-        "MendFuse", _callable=actions.mend_fuse, f=Fuse, duration=3
+        "MendFuse", _callable=TemporalActions.mend_fuse, f=Fuse, duration=3
     )
     mend_fuse.add_condition(StartTiming(), handsfree)
     mend_fuse.add_condition(ClosedTimeInterval(StartTiming(), EndTiming()), light)
@@ -165,24 +164,7 @@ def main():
         graph_executor, dry_run=True
     )  # Dry run condition checks since temporal evaluation is not supported yet
 
-    # draw graph
-    plt.figure(figsize=(10, 10))
-
-    labels = {}
-    for node in graph_executor.nodes(data=True):
-        labels[node[0]] = node[1]["node_name"]
-
-    pos = nx.nx_pydot.pydot_layout(graph_executor, prog="dot")
-    nx.draw(
-        graph_executor,
-        pos,
-        with_labels=True,
-        labels=labels,
-        node_size=1000,
-        node_color="skyblue",
-        font_size=20,
-    )
-    plt.show()
+    # TODO: Add visulization
 
 
 if __name__ == "__main__":
