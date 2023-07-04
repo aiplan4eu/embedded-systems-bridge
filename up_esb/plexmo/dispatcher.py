@@ -21,6 +21,7 @@
 import networkx as nx
 from unified_planning.plans import Plan
 
+from up_esb.exceptions import UPESBException, UPESBWarning
 from up_esb.execution import ActionExecutor, ActionResult
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus, MonitorStatus
 
@@ -37,9 +38,10 @@ class PlanDispatcher:
         self._replan_cb = self._default_replan_cb
         self._options = None
         self._executor = None
-        # TODO: Use the plan for plan repair, replanning, etc.
         self._plan = None
+        self._rules = {}
         self._monitor = None
+        self._node_data = None
 
     @property
     def monitor(self) -> PlanMonitor:
@@ -67,22 +69,61 @@ class PlanDispatcher:
         self._graph = graph
         self._options = options
         self._plan = plan
-        self._monitor = PlanMonitor(graph)
-        self._monitor.status = MonitorStatus.STARTED
 
         self._executor = ActionExecutor(graph, options=options)
         self._executor = self._executor.get_executor(plan)
 
-        # TODO: Dispatch actions based on predecessors and successors.
-        for node_id, node in self._graph.nodes(data=True):
+        # Setup Monitor
+        self._setup_monitor(self._graph)
+
+        while self._status != DispatcherStatus.REPLANNING or not self._node_data:
+            # Get the next node to be executed
+            node_id, node = self._node_data.pop(0) if len(self._node_data) > 0 else (None, None)
+            if node_id is None:
+                break
+            if self._status == DispatcherStatus.REPLANNING:
+                self._setup_monitor(self._graph)
+                self._status = DispatcherStatus.IN_PROGRESS
+
             self._monitor.status = MonitorStatus.IN_PROGRESS
 
-            if node["action"] in ["start", "end"]:
+            predecessors = list(self.monitor_graph.predecessors(node_id))
+
+            # Start and end nodes
+            if node["action"] == "start":
+                assert len(predecessors) == 0, "Start node cannot have predecessors"
                 self._monitor.update_action_status(node_id, ActionNodeStatus.SUCCEEDED)
                 continue
+            elif node["action"] == "end":
+                # Check if all the predecessors are succeeded
+                predecessors_status = self._check_node_status(
+                    predecessors, ActionNodeStatus.SUCCEEDED
+                )
+                if predecessors_status is False:
+                    self._monitor.update_action_status(node_id, ActionNodeStatus.FAILED)
+                    self._monitor.status = MonitorStatus.FAILED
+                    continue
+
+                self._monitor.update_action_status(node_id, ActionNodeStatus.SUCCEEDED)
+                continue
+
+            # Check if all the predecessors are succeeded
+            predecessors_status = self._check_node_status(predecessors, ActionNodeStatus.SUCCEEDED)
+            if predecessors_status is False:
+                self._monitor.update_action_status(node_id, ActionNodeStatus.NOT_STARTED)
+                self._status = DispatcherStatus.FAILED
+
+                message = f"Predecessors for action {node['node_name']} are not succeeded. Cannot execute the action."
+                if options.get("dry_run", False):
+                    raise UPESBException(message)
+                raise UPESBWarning(message)
+
+            # Execute the action
+            # TODO: Add parallel execution with Task Trackers
             result = self._executor.execute_action(node_id)
             self._monitor.update_action_status(node_id, result.action_status)
 
+            # Process the result
             if result.result is None:
                 self._monitor.update_action_status(node_id, result.action_status)
             else:
@@ -91,7 +132,12 @@ class PlanDispatcher:
 
             if self._check_result(result) is False:
                 self._status = DispatcherStatus.FAILED
-                # TODO: Replan
+
+                # Replan if replan callback is provided
+                if self._replan_cb is not None:
+                    self._status = DispatcherStatus.REPLANNING
+                    self._plan, self._graph = self._replan_cb(self._plan, self._rules)
+                    continue
             else:
                 self._monitor.status = MonitorStatus.IN_PROGRESS
                 self._status = DispatcherStatus.IN_PROGRESS
@@ -104,6 +150,14 @@ class PlanDispatcher:
 
         return True
 
+    def _check_node_status(self, nodes: list, status: ActionNodeStatus):
+        """Check node status from monitoring graph."""
+        for node_id in nodes:
+            if self.monitor_graph.nodes[node_id]["status"] != status:
+                return False
+
+        return True
+
     def _check_result(self, result: ActionResult):
         if (
             result.precondition_status != ConditionStatus.SUCCEEDED
@@ -113,6 +167,13 @@ class PlanDispatcher:
             return False
 
         return True
+
+    def _setup_monitor(self, graph: nx.DiGraph):
+        """Setup monitor for monitoring the execution."""
+        self._monitor = PlanMonitor(graph)
+        self._monitor.status = MonitorStatus.STARTED
+
+        self._node_data = [(node_id, node) for node_id, node in graph.nodes(data=True)]
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.
@@ -127,8 +188,24 @@ class PlanDispatcher:
         """Return the current status of the dispatcher."""
         return self._status
 
-    def set_replan_callback(self, callback):
+    def set_replan_callback(self, callback, **args):
         """Set callback function that triggers replanning"""
+
+        if args.get("rules", None) is not None:
+            if not isinstance(self._rules, dict):
+                raise UPESBException(
+                    "Rules argument should be a dictionary with rule name as key and rule as value"
+                )
+            self._rules = args.get("rules")
+        else:
+            self._rules = {}
+
+        if args.get("plan", None) is not None:
+            self._plan = args.get("plan")
+        else:
+            raise UPESBException("Plan argument is not provided for replanning callback")
+
+        # TODO: Check if return type of callback is Plan and Graph
         self._replan_cb = callback
 
     def _default_dispatch_cb(self, node_id: str):

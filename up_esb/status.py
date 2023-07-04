@@ -35,6 +35,7 @@ class DispatcherStatus(Enum):
     IN_PROGRESS = auto()
     FAILED = auto()
     FINISHED = auto()
+    REPLANNING = auto()
 
 
 class MonitorStatus(Enum):

@@ -7,6 +7,10 @@ class UPESBException(Exception):
     """Raised when an exception occurs"""
 
 
+class UPESBWarning(Warning):
+    """Raised when a warning occurs"""
+
+
 class ConditionNotMet(Exception):
     """Raised when a condition is not met"""
 
