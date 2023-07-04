@@ -19,8 +19,6 @@
 """Example for parallel execution of a partial order plan."""
 from pprint import pprint
 
-import matplotlib.pyplot as plt
-import networkx as nx
 import unified_planning as up
 from parallel import (
     Area,
@@ -42,7 +40,6 @@ from up_esb.executor import Executor
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
-    robot = Robot()
     bridge.create_types([Location, Area, Robot])
 
     robot_at = bridge.create_fluent_from_function(robot_at_fun)
@@ -52,7 +49,7 @@ def define_problem():
 
     # Instead of the example in paralle.py, we use instantanious actions
     move, [l_from, l_to] = bridge.create_action(
-        "Move", _callable=robot.move, l_from=Location, l_to=Location
+        "Move", _callable=Robot.move, l_from=Location, l_to=Location
     )
     move.add_precondition(info_sent(l_from))
     move.add_precondition(info_sent(l_to))
@@ -61,12 +58,10 @@ def define_problem():
     move.add_effect(robot_at(l_to), True)
     move.add_effect(visited(l_to), True)
 
-    survey, [a] = bridge.create_action(  # pylint: disable=unused-variable
-        "Survey", _callable=robot.survey, area=Area
-    )
+    survey, [_] = bridge.create_action("Survey", _callable=Robot.survey, area=Area)
     survey.add_effect(is_surveyed(), True)
 
-    send_info, [l] = bridge.create_action("SendInfo", _callable=robot.send_info, location=Location)
+    send_info, [l] = bridge.create_action("SendInfo", _callable=Robot.send_info, location=Location)
     # send_info.add_precondition(is_surveyed())
     send_info.add_effect(info_sent(l), True)
 
@@ -101,7 +96,7 @@ def main():
     up.shortcuts.get_environment().credits_stream = None
     bridge, problem = define_problem()
 
-    plan = bridge.solve(problem)  # By default, choses a planner based on its problemkind
+    plan = bridge.solve(problem)  # By default, chooses a planner based on its problem.kind
     print("*" * 10)
     print("* Plan *")
     for action in plan.actions:
@@ -121,24 +116,7 @@ def main():
     executor = Executor()
     executor.execute(dependency_graph)
 
-    # draw graph
-    plt.figure(figsize=(10, 10))
-
-    labels = {}
-    for node in dependency_graph.nodes(data=True):
-        labels[node[0]] = node[1]["node_name"]
-
-    pos = nx.nx_pydot.pydot_layout(dependency_graph, prog="dot")
-    nx.draw(
-        dependency_graph,
-        pos,
-        with_labels=True,
-        labels=labels,
-        node_size=2000,
-        node_color="skyblue",
-        font_size=20,
-    )
-    plt.show()
+    # TODO: Add visualization
 
 
 if __name__ == "__main__":

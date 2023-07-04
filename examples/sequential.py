@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Example for sequential plan execution."""
-import matplotlib.pyplot as plt
-import networkx as nx
 import unified_planning as up
 
 from up_esb.bridge import Bridge
@@ -39,28 +37,24 @@ class Robot:
 
     location = Location("l1")
 
-    def __init__(self):
-        self.l_from = ""
-        self.l_to = ""
-
-    def move(self, l_from: Location, l_to: Location):
+    @classmethod
+    def move(cls, l_from: Location, l_to: Location):
         """Move the robot from one location to another."""
 
-        self.l_from, self.l_to = l_from, l_to
-        print(f"Moving from {self.l_from} to {self.l_to}")
-        Robot.location = self.l_to
+        print(f"Moving from {l_from} to {l_to}")
+        Robot.location = l_to
 
         return True
 
 
 def robot_at_fun(l: Location):
     """Check if the robot is at a location."""
-    return Robot().location == l
+    return Robot.location == l
 
 
 def visited_fun(l: Location):
     """Check if the location is visited."""
-    return Robot().location == l
+    return Robot.location == l
 
 
 #################### 2. Define the problem ####################
@@ -69,7 +63,6 @@ def visited_fun(l: Location):
 def define_problem():
     """Define the problem."""
     bridge = Bridge()
-    robot = Robot()
 
     bridge.create_types([Location, Robot])
 
@@ -82,7 +75,7 @@ def define_problem():
     l4 = bridge.create_object("l4", Location("l4"))
 
     move, [l_from, l_to] = bridge.create_action(
-        "Move", _callable=robot.move, l_from=Location, l_to=Location
+        "Move", _callable=Robot.move, l_from=Location, l_to=Location
     )
     move.add_precondition(robot_at(l_from))
     move.add_effect(robot_at(l_from), False)
@@ -123,24 +116,7 @@ def main():
     graph_executor = bridge.get_executable_graph(plan)
     dispatcher.execute_plan(graph_executor)
 
-    # draw graph
-    plt.figure(figsize=(10, 10))
-
-    labels = {}
-    for node in graph_executor.nodes(data=True):
-        labels[node[0]] = node[1]["node_name"]
-
-    pos = nx.nx_pydot.pydot_layout(graph_executor, prog="dot")
-    nx.draw(
-        graph_executor,
-        pos,
-        with_labels=True,
-        labels=labels,
-        node_size=2000,
-        node_color="skyblue",
-        font_size=20,
-    )
-    plt.show()
+    # TODO: Add visualization
 
 
 if __name__ == "__main__":
