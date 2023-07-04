@@ -47,13 +47,13 @@ class Fuse:
 class TemporalActions:
     """Class for temporal actions."""
 
-    m = None
-    f = None
+    match = None
+    fuse = None
 
     @classmethod
     def light_match(cls, m: Match):
         """Light match action."""
-        TemporalActions.m = m
+        TemporalActions.match = m
 
         print(f"Lighting match {m}")
         time.sleep(5)
@@ -62,7 +62,7 @@ class TemporalActions:
     @classmethod
     def mend_fuse(cls, f: Fuse):
         """Mend fuse action."""
-        TemporalActions.f = f
+        TemporalActions.fuse = f
 
         print(f"Mending fuse {f}")
         time.sleep(3)
@@ -71,27 +71,27 @@ class TemporalActions:
 
 def handsfree_fun():
     """Check if hands are free."""
-    return TemporalActions.m is None and TemporalActions.f is None
+    return TemporalActions.match is None and TemporalActions.fuse is None
 
 
 def light_fun():
     """Check if lighted."""
-    return TemporalActions.m is not None
+    return TemporalActions.match is not None
 
 
 def match_used_fun(m: Match):  # pylint: disable=unused-argument
     """Check if match is used."""
-    return TemporalActions.m == m
+    return TemporalActions.match == m
 
 
 def fuse_mended_fun(f: Fuse):  # pylint: disable=unused-argument
     """Fuse mended?"""
-    return TemporalActions.f == f
+    return TemporalActions.fuse == f
 
 
 def light_match_fun(m: Match):  # pylint: disable=unused-argument
     """Light match?"""
-    return TemporalActions.m == m
+    return TemporalActions.match == m
 
 
 #################### 2. Define the problem ####################
