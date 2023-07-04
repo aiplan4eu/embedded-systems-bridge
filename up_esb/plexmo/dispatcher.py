@@ -35,18 +35,36 @@ class PlanDispatcher:
         self._status = DispatcherStatus.IDLE
         self._dispatch_cb = self._default_dispatch_cb
         self._replan_cb = self._default_replan_cb
-        self._dispatched_position = 0
         self._options = None
         self._executor = None
         # TODO: Use the plan for plan repair, replanning, etc.
         self._plan = None
         self._monitor = None
 
+    @property
+    def monitor(self) -> PlanMonitor:
+        """Plan monitor."""
+        return self._monitor
+
+    @property
+    def monitor_status(self) -> MonitorStatus:
+        """Plan monitor status."""
+        return self._monitor.status
+
+    @property
+    def monitor_graph(self) -> nx.DiGraph:
+        """Plan monitor graph."""
+        return self._monitor.graph
+
+    @property
+    def execution_graph(self) -> nx.DiGraph:
+        """Plan execution graph."""
+        return self._graph
+
     def execute_plan(self, plan: Plan, graph: nx.DiGraph, **options):
         """Execute the plan."""
         self._status = DispatcherStatus.STARTED
         self._graph = graph
-        self._dispatched_position = 0
         self._options = options
         self._plan = plan
         self._monitor = PlanMonitor(graph)
@@ -69,11 +87,11 @@ class PlanDispatcher:
                 self._monitor.update_action_status(node_id, result.action_status)
             else:
                 self._monitor.status = MonitorStatus.FAILED
-                self._monitor.process_action_result(node_id, result)
+                self._monitor.process_action_result(result, dry_run=options.get("dry_run", True))
 
             if self._check_result(result) is False:
-                # TODO: Replan
                 self._status = DispatcherStatus.FAILED
+                # TODO: Replan
             else:
                 self._monitor.status = MonitorStatus.IN_PROGRESS
                 self._status = DispatcherStatus.IN_PROGRESS

@@ -1,4 +1,5 @@
-# Copyright 2022 Sebastian Stock, DFKI
+# Copyright 2022 DFKI
+# Copyright 2023 LAAS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Authors:
+# Sebastian Stock, DFKI
+# Selvakumar H S, LAAS-CNRS
+
 """Monitoring of a SequentialPlan."""
 import networkx as nx
 
+from up_esb.exceptions import process_action_result
 from up_esb.execution import ActionResult
 from up_esb.status import ActionNodeStatus, MonitorStatus
 
@@ -62,6 +69,11 @@ class PlanMonitor:
 
         self._graph = new_graph
 
+    @property
+    def graph(self) -> nx.DiGraph:
+        """Monitor graph."""
+        return self._graph
+
     def get_status(self) -> MonitorStatus:
         """Return the current status of the monitor."""
         return self._status
@@ -82,36 +94,13 @@ class PlanMonitor:
     def update_action_status(self, node_id: int, status: ActionNodeStatus) -> None:
         """Update the status of the given action."""
         self._graph.nodes[node_id]["status"] = status
+        self._graph.nodes[node_id]["processed"] = True
 
-    def process_action_result(self, node_id: int, result: ActionResult) -> None:
+    def process_action_result(self, result: ActionResult, dry_run: bool = False) -> None:
         """Process the result of an action."""
-
-
-class ProcessActionResult:
-    """Process ActionResult from the executor."""
-
-    def __init__(self, graph: nx.DiGraph):
-        self._graph = graph
-
-    def is_action_succeeded(self, node_id: int):
-        """Check if the action result is already processed."""
-        return self._graph.nodes[node_id]["status"] == ActionNodeStatus.SUCCEEDED
-
-    def is_action_failed(self, node_id: int):
-        """Check if the action result is already processed."""
-        return self._graph.nodes[node_id]["status"] == ActionNodeStatus.FAILED
-
-    def is_action_unknown(self, node_id: int):
-        """Check if the action result is already processed."""
-        return self._graph.nodes[node_id]["status"] == ActionNodeStatus.UNKNOWN
-
-    def is_action_not_started(self, node_id: int):
-        """Check if the action result is already processed."""
-        return self._graph.nodes[node_id]["status"] == ActionNodeStatus.NOT_STARTED
-
-    def is_action_started(self, node_id: int):
-        """Check if the action result is already processed."""
-        return self._graph.nodes[node_id]["status"] == ActionNodeStatus.STARTED
-
-    def process_result(self, result: ActionResult, node_id: int) -> None:
-        """Process the result of an action."""
+        if not dry_run:
+            raise process_action_result(result)
+        else:
+            # Reraise as warning
+            exception = process_action_result(result)
+            raise Warning(str(exception))

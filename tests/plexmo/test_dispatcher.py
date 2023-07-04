@@ -21,7 +21,7 @@ from unified_planning.plans.plan import ActionInstance
 from tests import ContextManager, get_example_plans
 from up_esb.bridge import Bridge
 from up_esb.plexmo.dispatcher import PlanDispatcher
-from up_esb.status import DispatcherStatus
+from up_esb.status import ActionNodeStatus, DispatcherStatus, MonitorStatus
 
 # pylint: disable=all
 
@@ -49,3 +49,8 @@ class TestDispatcher:
         dispatcher = PlanDispatcher()
         dispatcher.execute_plan(plan, graph, verbose=True, dry_run=True)
         assert dispatcher.status == DispatcherStatus.FINISHED
+        assert dispatcher.monitor_status == MonitorStatus.FINISHED
+
+        for _, node in dispatcher.monitor_graph.nodes(data=True):
+            assert node["processed"] == True
+            assert node["status"] == ActionNodeStatus.SUCCEEDED
