@@ -12,6 +12,7 @@ class ActionNodeStatus(Enum):
     FAILED = auto()
     SKIPPED = auto()
     UNKNOWN = auto()
+    TIMEOUT = auto()
 
 
 class ConditionStatus(Enum):
