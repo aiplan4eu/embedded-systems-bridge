@@ -340,7 +340,7 @@ class Bridge:
     def solve(
         problem: Problem, planner_name: Optional[str] = None, optimize_with_default_metric=True
     ) -> Optional[Plan]:
-        """Solve planning problem and return list of UP actions."""
+        """Solve planning problem and return a UP Plan, if possible."""
         if optimize_with_default_metric:
             if not any(
                 isinstance(metric, MinimizeSequentialPlanLength)
