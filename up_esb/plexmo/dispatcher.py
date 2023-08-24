@@ -19,73 +19,10 @@
 # - Selvakumar H S, LAAS-CNRS
 """Dispatcher for executing plans."""
 import networkx as nx
-from unified_planning.plans.sequential_plan import SequentialPlan
+from unified_planning.plans import Plan
 
-
-class SequentialPlanDispatcher:
-    """Dispatches the actions of a sequential plan."""
-
-    def __init__(self):
-        self._plan = None
-        self._status = "idle"
-        self._dispatch_cb = None
-        self._replan_cb = None
-        self._dispatched_position = 0
-
-    def execute_plan(self, plan: SequentialPlan):
-        """Execute the plan."""
-        self._status = "executing"
-        self._plan = plan
-        self._dispatched_position = 0
-        replanned = False
-        last_failed_action = None
-        while self._dispatched_position < len(self._plan.actions) and self._status != "failure":
-            current_action = self._plan.actions[self._dispatched_position]
-            action_result = self._dispatch_cb(current_action)
-            if not action_result:
-                # TODO Move error handling into separate method
-                if last_failed_action != current_action:
-                    last_failed_action = current_action
-                    if not replanned and self._replan_cb:
-                        # replan once if an action fails for each action
-                        # TODO make replannig more flexible (dependent on the action) and generic
-                        print("Action failed: Replanning once!")
-                        new_plan = self._replan_cb()
-                        if new_plan is not None:
-                            self._plan = new_plan
-                            self._dispatched_position = 0
-                            replanned = True
-                            continue
-                self._status = "failure"
-            else:
-                replanned = False
-                if last_failed_action == current_action:
-                    last_failed_action = None
-                if self._plan.actions[self._dispatched_position].action.name == "!replan":
-                    self._dispatched_position = 0
-                else:
-                    self._dispatched_position += 1
-        if self._status != "failure":
-            self._status = "finished"
-            return True
-
-        return False
-
-    def set_dispatch_callback(self, callback):
-        """Set callback function for executing actions.
-        For now, that function is expected to be blocking and
-        to return True if the action has been executed successfully
-        and False in case of failure.
-        """
-        self._dispatch_cb = callback
-
-    def status(self) -> str:
-        """Return the current status of the dispatcher."""
-        return self._status
-
-    def set_replan_callback(self, callback):
-        """Set callback function that triggers replanning"""
-        self._replan_cb = callback
+from up_esb.execution import ActionExecutor, ActionResult
+from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus
 
 
 class PlanDispatcher:
@@ -93,62 +30,52 @@ class PlanDispatcher:
 
     def __init__(self):
         self._graph = None
-        self._status = "idle"
+        self._status = DispatcherStatus.IDLE
         self._dispatch_cb = self._default_dispatch_cb
-        self._replan_cb = None
+        self._replan_cb = self._default_replan_cb
         self._dispatched_position = 0
         self._options = None
+        self._executor = None
+        self._plan = None
+        # TODO: Use the plan for plan repair, replanning, etc.
 
-    def execute_plan(self, graph: nx.DiGraph, **options):
+    def execute_plan(self, plan: Plan, graph: nx.DiGraph, **options):
         """Execute the plan."""
-        self._status = "executing"
+        self._status = DispatcherStatus.STARTED
         self._graph = graph
         self._dispatched_position = 0
         self._options = options
-        replanned = False
-        last_failed_action = None
-        for node in self._graph.nodes(data=True):
-            if node[1]["node_name"] in ["start", "end"]:
-                continue  # skip start and end node
-            successors = list(self._graph.successors(node[0]))
-            if len(successors) > 1 and self._status != "failure":  # Assume as single action
-                # TODO: Handle multiple successors
-                print(f"Node {node[0]} has {len(successors)} successors: {successors}. Exiting!")
-                self._status = "failure"
-                return False
-            current_action = node
-            action_result = self._dispatch_cb(current_action)
-            if not action_result:
-                # TODO Move error handling into separate method
-                if last_failed_action != current_action:
-                    last_failed_action = current_action
-                    if not replanned and self._replan_cb:
-                        # replan once if an action fails for each action
-                        # TODO make replannig more flexible
-                        # (dependent on the action) and generic
-                        print("Action failed: Replanning once!")
-                        new_plan = self._replan_cb()
-                        if new_plan is not None:
-                            self._graph = new_plan
-                            self._dispatched_position = 0
-                            replanned = True
-                            continue
-                self._status = "failure"
+        self._plan = plan
+
+        self._executor = ActionExecutor(graph, options=options)
+        self._executor = self._executor.get_executor(plan)
+
+        for node_id, node in self._graph.nodes(data=True):
+            if node["action"] in ["start", "end"]:
+                continue
+            result = self._executor.execute_action(node_id)
+
+            if self._check_result(result) is False:
+                # TODO: Replan
+                self._status = DispatcherStatus.FAILED
             else:
-                replanned = False
-                if last_failed_action == current_action:
-                    last_failed_action = None
-                # TODO:Check the below condition
-                if node[0] == "!replan":
-                    self._dispatched_position = 0
-                else:
-                    self._dispatched_position += 1
+                self._status = DispatcherStatus.IN_PROGRESS
 
-        if self._status != "failure":
-            self._status = "finished"
-            return True
+        if self._status == DispatcherStatus.FAILED and self._replan_cb is not None:
+            return False
 
-        return False
+        self._status = DispatcherStatus.FINISHED
+        return True
+
+    def _check_result(self, result: ActionResult):
+        if (
+            result.precondition_status != ConditionStatus.SUCCEEDED
+            or result.action_status != ActionNodeStatus.SUCCEEDED
+            or result.postcondition_status != ConditionStatus.SUCCEEDED
+        ):
+            return False
+
+        return True
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.
@@ -158,6 +85,7 @@ class PlanDispatcher:
         """
         self._dispatch_cb = callback
 
+    @property
     def status(self) -> str:
         """Return the current status of the dispatcher."""
         return self._status
@@ -166,49 +94,10 @@ class PlanDispatcher:
         """Set callback function that triggers replanning"""
         self._replan_cb = callback
 
-    def _default_dispatch_cb(self, action):
-        """Dispatch callback function."""
-        # TODO: Add verification of preconditions
-        parameters = action[1]["parameters"]
-        preconditions = action[1]["preconditions"]
-        post_conditions = action[1]["postconditions"]
-        context = action[1]["context"]
-        executor = context[action[1]["action"]]
+    def _default_dispatch_cb(self, node_id: str):
+        # TODO: Involve with monitoring and logging
+        raise NotImplementedError
 
-        # Execution options
-        dry_run = self._options.get("dry_run", False)
-        verbose = self._options.get("verbose", False)
-
-        # Preconditions
-        for i, (_, conditions) in enumerate(preconditions.items()):
-            for condition in conditions:
-                result = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval"), context
-                )
-
-                # Check if all preconditions return boolean True
-                if not result and not dry_run:
-                    raise RuntimeError(
-                        f"Precondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
-                    )
-            if verbose:
-                print(f"Evaluated {len(conditions)} preconditions ...")
-
-        # Execute action
-        executor(**parameters)
-
-        for i, (_, conditions) in enumerate(post_conditions.items()):
-            for condition, value in conditions:
-                actual = eval(  # pylint: disable=eval-used
-                    compile(condition, filename="<ast>", mode="eval"), context
-                )
-                expected = eval(  # pylint: disable=eval-used
-                    compile(value, filename="<ast>", mode="eval"), context
-                )
-
-                if actual != expected and not dry_run:
-                    raise RuntimeError(
-                        f"Postcondition {i+1} for action {action[1]['action']}{tuple(parameters.values())} failed!"
-                    )
-            if verbose:
-                print(f"Evaluated {len(conditions)} postconditions ...")
+    def _default_replan_cb(self):
+        # TODO: Involve with monitoring and logging
+        raise NotImplementedError

@@ -12,29 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Monitoring of a SequentialPlan."""
-from typing import List, Tuple
+import networkx as nx
 
-from unified_planning.engines import UPSequentialSimulator
-from unified_planning.model.fnode import FNode
-from unified_planning.model.problem import Problem
-from unified_planning.model.state import State
-from unified_planning.plans.plan import ActionInstance
+from up_esb.status import ActionNodeStatus, MonitorStatus
 
 
-class SequentialPlanMonitor:
-    """Monitors a SequentialPlan"""
+class PlanMonitor:
+    """Monitors the expecution of a UP-ESB plan graph."""
 
-    def __init__(self, problem: Problem):
-        self._simulator = UPSequentialSimulator(problem)
+    def __init__(self, executable_graph: nx.DiGraph):
+        self._graph = executable_graph
+        self._status = MonitorStatus.IDLE
+        self._action_status = ActionNodeStatus.NOT_STARTED
 
-    def check_preconditions(
-        self, instance: ActionInstance, state: State
-    ) -> Tuple[bool, List[FNode]]:
-        """
-        Returns result of checking preconditions of a given `ActionInstance` in the `State`
-        and a list of the precondtions that are not fulfilled.
-        """
-        unsatisfied = self._simulator.get_unsatisfied_conditions(
-            state, instance.action, instance.actual_parameters, early_termination=False
-        )
-        return (len(unsatisfied) == 0, unsatisfied)
+    def get_status(self) -> MonitorStatus:
+        """Return the current status of the monitor."""
+        return self._status
+
+    def get_action_status(self, action_name: str) -> ActionNodeStatus:
+        """Return the status of the given action."""
+        self._action_status = self._get_action_status(action_name)
+
+        return self._action_status
+
+    def _get_action_status(self, action_name: str) -> ActionNodeStatus:
+        """Return the status of the given action."""
+        for _, node in self._graph.nodes(data=True):
+            if node["node_name"] == action_name:
+                return node["status"]
+        return ActionNodeStatus.UNKNOWN

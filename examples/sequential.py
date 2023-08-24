@@ -114,7 +114,7 @@ def main():
     print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
-    dispatcher.execute_plan(graph_executor)
+    dispatcher.execute_plan(plan, graph_executor)
 
     # TODO: Add visualization
 

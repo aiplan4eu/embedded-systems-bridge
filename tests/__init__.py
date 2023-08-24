@@ -49,6 +49,9 @@ available_plans = [
     "htn-go-temporal",
 ]
 
+# TODO: The following plans are not supported yet
+# MINUS, EXISTS, FORALL
+# INCREASED_EFFECT, DECREASED_EFFECT
 PLANS_WITH_UNSUPPORTED_OPERATORS = [
     "basic_nested_conjunctions",
     "basic_exists",
@@ -62,6 +65,7 @@ PLANS_WITH_UNSUPPORTED_OPERATORS = [
     "robot_int_battery",
     "robot_locations_connected_without_battery",
     "travel_with_consumptions",
+    "travel",
 ]
 
 # TODO: Hierarchical plans are not supported yet
