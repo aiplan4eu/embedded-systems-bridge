@@ -257,7 +257,7 @@ class TemporalTaskExecutor(ActionExecutor):
 
             if not result:
                 return RuntimeError(
-                    f"Precondition (i+1) for action {self._node_name}{tuple(self._parameters.values())} failed!"
+                    f"Precondition {i+1} for action {self._node_name}{tuple(self._parameters.values())} failed!"
                 )
 
         return ConditionStatus.SUCCEEDED
