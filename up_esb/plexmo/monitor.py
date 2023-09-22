@@ -22,6 +22,7 @@ import networkx as nx
 
 from up_esb.exceptions import process_action_result
 from up_esb.execution import ActionResult
+from up_esb.logger import Logger
 from up_esb.status import ActionNodeStatus, MonitorStatus
 
 
@@ -32,6 +33,7 @@ class PlanMonitor:
         self._graph = executable_graph
         self._status = MonitorStatus.IDLE
         self._action_status = ActionNodeStatus.NOT_STARTED
+        self._logger = Logger(__name__)
 
         # Preprocess the graph to remove the executable elements.
         self._preprocess_graph()
@@ -103,4 +105,4 @@ class PlanMonitor:
         else:
             # Reraise as warning
             exception = process_action_result(result)
-            raise Warning(str(exception))
+            self._logger.warning(str(exception))

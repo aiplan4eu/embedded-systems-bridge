@@ -23,6 +23,7 @@ from unified_planning.plans import Plan
 
 from up_esb.exceptions import UPESBException, UPESBWarning
 from up_esb.execution import ActionExecutor, ActionResult
+from up_esb.logger import Logger
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus, MonitorStatus
 
 from .monitor import PlanMonitor
@@ -35,13 +36,14 @@ class PlanDispatcher:
         self._graph = None
         self._status = DispatcherStatus.IDLE
         self._dispatch_cb = self._default_dispatch_cb
-        self._replan_cb = self._default_replan_cb
+        self._replan_cb = None
         self._options = None
         self._executor = None
         self._plan = None
         self._rules = {}
         self._monitor = None
         self._node_data = None
+        self._logger = Logger(__name__)
 
     @property
     def monitor(self) -> PlanMonitor:
@@ -113,9 +115,10 @@ class PlanDispatcher:
                 self._monitor.update_action_status(node_id, ActionNodeStatus.NOT_STARTED)
                 self._status = DispatcherStatus.FAILED
 
-                message = f"Predecessors for action {node['node_name']} are not succeeded. Cannot execute the action."
+                message = f"Predecessors for action {node['node_name']} are not succeeded. Cannot execute the action. Exiting..."
                 if options.get("dry_run", False):
-                    raise UPESBException(message)
+                    self._logger.warning(message)
+                    exit(1)
                 raise UPESBWarning(message)
 
             # Execute the action

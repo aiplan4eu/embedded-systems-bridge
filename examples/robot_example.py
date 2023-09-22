@@ -234,7 +234,7 @@ def main():
     print("*" * 10)
 
     graph_executor = bridge.get_executable_graph(plan)
-    dispatcher.execute_plan(plan, graph_executor)
+    dispatcher.execute_plan(plan, graph_executor, dry_run=True)
 
     print("*" * 10)
     print(dispatcher.monitor_status)
