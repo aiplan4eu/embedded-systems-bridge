@@ -18,10 +18,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "unified-planning[engines]==0.5.0.438.dev1",
+  "unified-planning==1.0.0",
   "networkx",
   "matplotlib",
-  "pydot",
 ]
 description = "General functionalities for using unified-planning in robotic applications"
 keywords = ["unified-planning", "embedded-systems-bridge"]
@@ -32,11 +31,16 @@ requires-python = ">=3.8"
 version = "0.0.177"
 
 [project.urls]
-Repository = "https://github.com/aiplan4eu/embedded-systems-bridge"
 Homepage = "https://www.aiplan4eu-project.eu/"
+Repository = "https://github.com/aiplan4eu/embedded-systems-bridge"
 
 [project.optional-dependencies]
-dev = ["black", "pylint", "pytest", "pre-commit"]
+dev = ["black", "mypy", "pylint", "pytest", "pre-commit"]
+engines = [
+  "up-aries==0.1.0",
+  # "up-fast-downward>=0.3.1",
+  "up-pyperplan==1.0.0.1.dev1",
+]
 
 ####################################################################################################
 #

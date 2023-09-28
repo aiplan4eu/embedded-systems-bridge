@@ -58,7 +58,7 @@ class Bridge:
         # Note: Map from type instead of str to recognize subclasses.
         self._types: Dict[type, Type] = {
             bool: BoolType(),
-            int: IntType(),
+            int: IntType(lower_bound=0, upper_bound=100),
             float: RealType(),
         }
         self._fluents: Dict[str, Fluent] = {}
