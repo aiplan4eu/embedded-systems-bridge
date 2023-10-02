@@ -98,8 +98,8 @@ class ActionExecutor:
         # Check preconditions
         result = self._check_preconditions(task_id)
         if isinstance(result, Exception):
-            precondition_status = ConditionStatus.FAILED, result
-            action_status = ActionNodeStatus.FAILED, result
+            precondition_status = ConditionStatus.FAILED
+            action_status = ActionNodeStatus.FAILED
             return ActionResult(precondition_status, action_status, postcondition_status, result)
         elif result:
             precondition_status = ConditionStatus.SUCCEEDED

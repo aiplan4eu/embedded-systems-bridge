@@ -12,6 +12,7 @@ class ActionNodeStatus(Enum):
     FAILED = auto()
     SKIPPED = auto()
     UNKNOWN = auto()
+    TIMEOUT = auto()
 
 
 class ConditionStatus(Enum):
@@ -34,6 +35,7 @@ class DispatcherStatus(Enum):
     IN_PROGRESS = auto()
     FAILED = auto()
     FINISHED = auto()
+    REPLANNING = auto()
 
 
 class MonitorStatus(Enum):

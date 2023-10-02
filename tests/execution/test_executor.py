@@ -26,7 +26,7 @@ class TestTaskExecutor:
     """Test the execution of instantaneous tasks."""
 
     @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
-    def test_instantaneous_task_executor(self, plan_name, plan):
+    def test_task_executor(self, plan_name, plan):
         """Test the execution of instantaneous tasks."""
 
         bridge = Bridge()

@@ -11,31 +11,34 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
 import pytest
-from unified_planning.engines import UPSequentialSimulator
-from unified_planning.model import UPState
-from unified_planning.test.examples import get_example_problems
 
-from up_esb.plexmo.monitor import PlanMonitor
+from tests import ContextManager, get_example_plans
+from up_esb.components.graph import plan_to_dependency_graph
+from up_esb.plexmo import PlanMonitor
 
 # pylint: disable=all
 
 
-@pytest.mark.skip(reason="Not implemented yet")
-class TestSequentialMonitor(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls._example = get_example_problems()["hierarchical_blocks_world"]
+class TestMonitor:
+    """Test the PlanMonitor class."""
 
-    def test_check_preconditions(self):
-        instance = self._example.plan.actions[0]
-        monitor = PlanMonitor(self._example.problem)
-        state = UPState(self._example.problem.initial_values)
-        self.assertTrue(monitor.check_preconditions(instance, state)[0])
+    @pytest.mark.parametrize("plan", list(get_example_plans().values()))
+    def test_plan_monitor_setup(self, plan):
+        graph = plan_to_dependency_graph(plan)
+        monitor = PlanMonitor(graph)
 
-        # after applying the first action, its preconditions are not fulfilled, anymore
-        simulator = UPSequentialSimulator(self._example.problem)
-        state = simulator.apply(state, instance.action, instance.actual_parameters)
-        self.assertFalse(monitor.check_preconditions(instance, state)[0])
+        assert list(monitor._graph.nodes) == list(graph.nodes)
+        assert list(monitor._graph.edges) == list(graph.edges)
+
+        for _, node in monitor._graph.nodes(data=True):
+            assert list(node.keys()) == [
+                "processed",
+                "action",
+                "status",
+                "node_name",
+                "result",
+                "predecessors",
+                "successors",
+            ]

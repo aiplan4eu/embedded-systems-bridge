@@ -1,17 +1,5 @@
 """Execution module for UP-ESB."""
 
-from .executor import (
-    ActionExecutor,
-    ActionResult,
-    InstantaneousTaskExecutor,
-    TaskExecutor,
-    TemporalTaskExecutor,
-)
+from .executor import ActionExecutor, ActionResult, TaskExecutor
 
-__all__ = [
-    "TaskExecutor",
-    "InstantaneousTaskExecutor",
-    "ActionResult",
-    "TemporalTaskExecutor",
-    "ActionExecutor",
-]
+__all__ = ["TaskExecutor", "ActionResult", "ActionExecutor"]
