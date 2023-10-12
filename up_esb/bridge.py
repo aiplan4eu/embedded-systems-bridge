@@ -74,11 +74,20 @@ class Bridge:
         """Return all UP objects."""
         return self._objects
 
-    def create_types(self, api_types: Iterable[type]) -> None:
-        """Create UP user types based on api_types."""
+    def create_types(
+        self, api_types: Iterable[type], father_api_type: Optional[Type] = None
+    ) -> None:
+        """Create UP user types based on api_types.
+
+        Optinally, a father_api_type can be provided. In that case UP uses HIERARCHICAL_TYPING
+         and creates user types that inherit from the father's type.
+         In this case the father_type must be created before the child types."""
         for api_type in api_types:
             assert api_type not in self._types, f"Type {api_type} already created!"
-            self._types[api_type] = UserType(api_type.__name__)
+            if father_api_type:
+                self._types[api_type] = UserType(api_type.__name__, self.get_type(father_api_type))
+            else:
+                self._types[api_type] = UserType(api_type.__name__)
 
     def get_type(self, api_type: type) -> Type:
         """Return UP user type corresponding to api_type or its superclasses."""
