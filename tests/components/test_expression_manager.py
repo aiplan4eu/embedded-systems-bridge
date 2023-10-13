@@ -1,4 +1,3 @@
-import ast
 import unittest
 
 from unified_planning.shortcuts import *  # pylint: disable=unused-wildcard-import
@@ -10,6 +9,23 @@ from up_esb.components.expression_manager import ExpressionManager
 
 
 # Example fluents
+
+
+class TestObject:
+    def __init__(self, value: int):
+        """Test object."""
+        self.value = value
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __str__(self) -> str:
+        return "TestObject"
+
+
 def fluent_bool_1_fun():
     """Fluent bool 1."""
     return True
@@ -45,6 +61,11 @@ def fluent_arg_real_1_fun(arg: float):
     return arg
 
 
+def fluent_arg_object(arg: TestObject) -> TestObject:
+    """Fluent real 1."""
+    return arg
+
+
 class TestExpressionManager(unittest.TestCase):
     """Test conversion of FNode to AST tree."""
 
@@ -58,6 +79,9 @@ class TestExpressionManager(unittest.TestCase):
         self._fluent_arg_bool_1 = self.bridge.create_fluent_from_function(fluent_arg_bool_1_fun)
         self._fluent_arg_int_1 = self.bridge.create_fluent_from_function(fluent_arg_int_1_fun)
         self._fluent_arg_real_1 = self.bridge.create_fluent_from_function(fluent_arg_real_1_fun)
+
+        self.bridge.create_types([TestObject])
+        self._fluent_arg_object = self.bridge.create_fluent_from_function(fluent_arg_object)
 
         self.ast = ExpressionManager()
 
@@ -126,6 +150,20 @@ class TestExpressionManager(unittest.TestCase):
 
         result = self.ast.convert(
             Not(And(self._fluent_arg_bool_1(True), self._fluent_arg_bool_1(True)))
+        )
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, False)
+
+        obj = self.bridge.create_object("obj", TestObject(1))
+        result = self.ast.convert(
+            Equals(self._fluent_arg_object(obj), self._fluent_arg_object(obj))
+        )
+        actual = eval(compile(result, filename="<ast>", mode="eval"))
+        self.assertEqual(actual, True)
+
+        obj1 = self.bridge.create_object("obj1", TestObject(2))
+        result = self.ast.convert(
+            Equals(self._fluent_arg_object(obj), self._fluent_arg_object(obj1))
         )
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, False)
