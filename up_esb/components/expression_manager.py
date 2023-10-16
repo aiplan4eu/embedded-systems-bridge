@@ -91,7 +91,7 @@ class ExpressionManager:
                 elif exp.is_real_constant():
                     return ast.Constant(value=exp.real_constant_value())
                 elif exp.is_object_exp():
-                    return ast.Constant(value=exp.object())
+                    return ast.Name(id=str(exp.object().name), ctx=ast.Load())
 
                 raise ValueError(f"Constant `{str(exp)}` not supported.")
 
