@@ -22,7 +22,7 @@ import networkx as nx
 from unified_planning.plans import Plan
 
 from up_esb.exceptions import UPESBException, UPESBWarning
-from up_esb.execution import ActionExecutor, ActionResult
+from up_esb.execution import ActionExecutor, ActionResult, TaskManager
 from up_esb.logger import Logger
 from up_esb.status import ActionNodeStatus, ConditionStatus, DispatcherStatus, MonitorStatus
 
@@ -44,6 +44,7 @@ class PlanDispatcher:
         self._monitor = None
         self._node_data = None
         self._logger = Logger(__name__)
+        self._execution_manager: TaskManager = None
 
     @property
     def monitor(self) -> PlanMonitor:
@@ -75,8 +76,9 @@ class PlanDispatcher:
         self._executor = ActionExecutor(graph, options=options)
         self._executor = self._executor.get_executor(plan)
 
-        # Setup Monitor
+        # Setup monitor and execution manager
         self._setup_monitor(self._graph)
+        self._execution_manager = self._setup_execution_manager(plan, graph, options)
 
         while self._status != DispatcherStatus.REPLANNING or not self._node_data:
             # Get the next node to be executed
@@ -177,6 +179,29 @@ class PlanDispatcher:
         self._monitor.status = MonitorStatus.STARTED
 
         self._node_data = [(node_id, node) for node_id, node in graph.nodes(data=True)]
+
+    def _setup_execution_manager(self, plan: Plan, graph: nx.DiGraph, options: dict):
+        """Setup execution manager for executing the actions."""
+        manager = TaskManager(plan, graph, **options)
+        manager.set_dispatch_callback(self._dispatch_cb)
+
+        # Add tasks
+        has_multiple_successors = {}
+        for node_id in graph.nodes():
+            successors = list(graph.successors(node_id))
+            if len(successors) > 1:
+                has_multiple_successors[node_id] = True
+            else:
+                has_multiple_successors[node_id] = False
+
+        for node_id in graph.nodes():
+            if has_multiple_successors[node_id] is False:
+                manager.add_task(node_id)
+                continue
+
+            manager.add_tasks(list(graph.successors(node_id)))
+
+        return manager
 
     def set_dispatch_callback(self, callback):
         """Set callback function for executing actions.

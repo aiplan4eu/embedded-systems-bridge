@@ -15,6 +15,11 @@
 from threading import Condition, Lock
 from typing import List, Union
 
+import networkx as nx
+from unified_planning.plans import Plan
+
+from up_esb.execution import ActionExecutor
+
 
 class TaskTracker:
     """Track the amount of tasks that is being executed."""
@@ -88,12 +93,12 @@ class TaskContainer:
 class TaskManager:
     """Task Manager for the execution of tasks."""
 
-    def __init__(self):
-        self._lock = Lock()
-        self._condition = Condition(self._lock)
-        self._task = None
-        self._thread = None
-        self._execution_queue = []
+    def __init__(self, plan: Plan, graph: nx.DiGraph, **options):
+        self._graph = graph
+        self._options = options
+        self._executor = ActionExecutor(graph, options=options).get_executor(plan)
+        self._execution_queue: List[TaskContainer] = []
+        self._dispatch_cb = None
 
     def add_task(self, task_id: int) -> bool:
         """Add a single task to the execution queue."""
@@ -105,7 +110,6 @@ class TaskManager:
         _container.add_task(task_id)
         if _container:
             self._execution_queue.append(_container)
-            self._condition.notify()
             return True
         return False
 
@@ -116,12 +120,15 @@ class TaskManager:
     def _add_tasks(self, task_ids: List[int]) -> bool:
         """Add multiple tasks to the execution queue."""
         _container = TaskContainer()
-        _container.add_task(task_ids)
-        if _container:
-            self._execution_queue.append(_container)
-            self._condition.notify()
-            return True
-        return False
+
+        for task_id in task_ids:
+            _container.add_task(task_id)
+
+            if not _container:
+                return False
+
+        self._execution_queue.append(_container)
+        return True
 
     def remove_task(self, task_id: int) -> bool:
         """Remove a task from the execution queue."""
@@ -138,3 +145,16 @@ class TaskManager:
     def _remove_tasks(self, task_ids: List[int]) -> bool:
         """Remove multiple tasks from the execution queue."""
         raise NotImplementedError
+
+    def set_dispatch_callback(self, callback):
+        """Set the callback function for dispatching tasks."""
+        self._dispatch_cb = callback
+
+    def step(self):
+        """Step the execution of the task manager."""
+        if not self._execution_queue:
+            return
+
+        container = self._execution_queue.pop(0)
+        with container:
+            container.execute_task()
