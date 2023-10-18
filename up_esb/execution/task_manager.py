@@ -13,7 +13,7 @@
 # limitations under the License.
 """Task Manager for the execution of tasks."""
 from threading import Condition, Lock
-from typing import List, Union
+from typing import List, Optional
 
 import networkx as nx
 from unified_planning.plans import Plan
@@ -49,11 +49,13 @@ class TaskTracker:
 class TaskContainer:
     """Task container for enveloping one or more actions."""
 
-    def __init__(self):
+    def __init__(self, graph: nx.DiGraph):
         self._container_lock = Lock()
         self._condition = Condition(self._container_lock)
-        self._task: Union[int, List[int]] = 0
+        self._tasks: List[nx.DiGraph] = []
         self._task_tracker = None
+        self._graph = graph
+        self._executor: Optional[ActionExecutor] = None
 
     def __enter__(self):
         with self._container_lock:
@@ -66,23 +68,29 @@ class TaskContainer:
             self._task_tracker = None
             self._condition.notify()
 
-    def add_task(self, task: Union[int, List[int]]) -> bool:
-        """Add a single task to the execution queue."""
-        if self._task is None:
-            self._task = task
-            return True
-        return False
+    def add_task(self, task_id: int) -> bool:
+        """Add a task to the execution queue."""
+        if task_id not in self._graph.nodes:
+            return False
+
+        self._tasks.append(task_id)
+        return True
 
     def execute_task(self):
         """Execute the task."""
-        if isinstance(self._task, int):
-            self._execute_task(self._task)
-        elif isinstance(self._task, list):
-            self._execute_tasks(self._task)
+        with self._container_lock:
+            if len(self._tasks) == 1:
+                self._execute_task(self._tasks[0])
+            else:
+                self._execute_tasks(self._tasks)
 
-    def _execute_task(self, task_id: int):
+    def set_executor(self, executor: ActionExecutor):
+        """Set the executor for the task container."""
+        self._executor = executor
+
+    def _execute_task(self, task):
         """Execute a single task."""
-        raise NotImplementedError
+        self._executor.execute(task)
 
     def _execute_tasks(self, task_ids: List[int]):
         """Execute multiple tasks."""
@@ -106,8 +114,9 @@ class TaskManager:
 
     def _add_task(self, task_id: int) -> bool:
         """Add a single task to the execution queue."""
-        _container = TaskContainer()
+        _container = TaskContainer(self._graph)
         _container.add_task(task_id)
+        _container.set_executor(self._executor)
         if _container:
             self._execution_queue.append(_container)
             return True
@@ -119,7 +128,8 @@ class TaskManager:
 
     def _add_tasks(self, task_ids: List[int]) -> bool:
         """Add multiple tasks to the execution queue."""
-        _container = TaskContainer()
+        _container = TaskContainer(self._graph)
+        _container.set_executor(self._executor)
 
         for task_id in task_ids:
             _container.add_task(task_id)

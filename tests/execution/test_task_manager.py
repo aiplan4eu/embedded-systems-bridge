@@ -24,12 +24,8 @@ from up_esb.execution.task_manager import TaskManager
 class TestTaskManager:
     """Test the execution of instantaneous tasks."""
 
-    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
-    def test_setup_task_manager(self, plan_name, plan):
-        """Test setup of task manager for sequential execution."""
-
-        print(f"Task manager test for plan: {plan_name}")
-
+    def setup_manager(self, plan):
+        """Setup the task manager for the given plan."""
         bridge = Bridge()
         ContextManager.plan = plan
         bridge._api_actions = ContextManager.get_actions_context(returns=True)
@@ -54,5 +50,27 @@ class TestTaskManager:
 
             manager.add_tasks(list(graph.successors(node_id)))
 
+        return manager, graph
+
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_setup_task_manager(self, plan_name, plan):
+        """Test setup of task manager for sequential execution."""
+
+        print(f"Task manager test for plan: {plan_name}")
+
+        manager, graph = self.setup_manager(plan)
+
         assert manager._graph == graph
         assert len(manager._execution_queue) == len(graph.nodes())
+
+    @pytest.mark.parametrize("plan_name, plan", get_example_plans().items())
+    def test_check_task_container(self, plan_name, plan):
+        """Test the task container for sequential execution."""
+
+        print(f"Task container test for plan: {plan_name}")
+
+        manager, _ = self.setup_manager(plan)
+
+        for container in manager._execution_queue:
+            with container:
+                assert len(container._tasks) == 1
