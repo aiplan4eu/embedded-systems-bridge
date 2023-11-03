@@ -135,7 +135,8 @@ class ActionExecutor:
         executor = self._context[self._action]
 
         # TODO: Proper setup of task tracker
-        result = executor(**self._parameters)
+        result = executor(*self._parameters.values())
+        # result = executor(**self._parameters)
 
         if result is None:
             return ActionNodeStatus.UNKNOWN
