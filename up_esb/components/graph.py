@@ -152,7 +152,11 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
     )
     for i, (start, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
-        duration = float(duration.numerator) / float(duration.denominator)
+        # TODO: Handle None Durations as Instantaneous Action Node
+        if duration:
+            duration = float(duration.numerator) / float(duration.denominator)
+        else:
+            duration = 0.0
         parameters, preconditions, postconditions = _process_action(action)
 
         dependency_graph.add_node(
@@ -179,7 +183,10 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
         dependency_graph.add_edge(parent_id, child_id)
         if i + 1 < len(plan.timed_actions):
             next_start, next_action, next_duration = plan.timed_actions[i + 1]
-            next_duration = float(next_duration.numerator) / float(next_duration.denominator)
+            if next_duration:
+                next_duration = float(next_duration.numerator) / float(next_duration.denominator)
+            else:
+                next_duration = 0.0
             if start != next_start:
                 parent_id = child_id
                 for next_parent in next_parents:
