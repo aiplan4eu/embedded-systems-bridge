@@ -37,9 +37,9 @@ Repository = "https://github.com/aiplan4eu/embedded-systems-bridge"
 [project.optional-dependencies]
 dev = ["black", "mypy", "pylint", "pytest", "pre-commit"]
 engines = [
-  "up-aries==0.1.0",
+  "up-aries",
   # "up-fast-downward>=0.3.1",
-  "up-pyperplan==1.0.0.1.dev1",
+  "up-pyperplan",
 ]
 
 ####################################################################################################
