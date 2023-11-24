@@ -7,23 +7,32 @@ branch = "HEAD"
 
 
 def calculate_version():
-    """Calculate the version based on the git commit count"""
-    commit_count = int(
-        subprocess.check_output(["git", "rev-list", "--count", branch]).decode().strip()
-    )
-
-    tags = (
-        subprocess.check_output(["git", "tag", "--points-at", branch]).decode().strip().split("\n")
-    )
+    """Calculate the version based on the git commit count since the latest tag"""
+    tags = subprocess.check_output(["git", "tag"]).decode().strip().split("\n")
 
     # Handle no tags condition
     if len(tags) == 1 and tags[0] == "":
         tags = []
 
     # Check for latest tag and skip if there is no tag
-    major_version = max(tags).split(".")[0].split("v")[1] if tags else "0"
-    minor_version = max(tags).split(".")[1] if tags else "0"
-    patch_version = max(tags).split(".")[2] if tags else commit_count
+    latest_tag = None
+    if tags and max(tags).startswith("v"):
+        latest_tag = max(tags)
+
+    if latest_tag:
+        commit_count = int(
+            subprocess.check_output(["git", "rev-list", "--count", f"{latest_tag}..{branch}"])
+            .decode()
+            .strip()
+        )
+    else:
+        commit_count = int(
+            subprocess.check_output(["git", "rev-list", "--count", branch]).decode().strip()
+        )
+
+    major_version = latest_tag.split(".")[0].split("v")[1] if latest_tag else "0"
+    minor_version = latest_tag.split(".")[1] if latest_tag else "0"
+    patch_version = int(latest_tag.split(".")[2]) + commit_count
 
     return f"{major_version}.{minor_version}.{patch_version}"
 
