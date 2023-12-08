@@ -1,5 +1,18 @@
+# Copyright 2023 Selvakumar H S, LAAS-CNRS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Executor for executing tasks."""
-from threading import Condition, Lock, Thread
+from threading import Thread
 from typing import NamedTuple
 
 import networkx as nx
@@ -18,42 +31,6 @@ ActionResult = NamedTuple(
         ("result", object),
     ],
 )
-
-
-class TaskTracker:
-    """Track the amount of tasks that is being executed."""
-
-    def __init__(self):
-        self._lock = Lock()
-        self._condition = Condition(self._lock)
-        self._tasks = 0
-
-    def __enter__(self):
-        with self._lock:
-            self._tasks += 1
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        with self._lock:
-            self._tasks -= 1
-            self._condition.notify()
-
-    def wait(self):
-        """Wait until all tasks are finished."""
-        with self._lock:
-            while self._tasks > 0:
-                self._condition.wait()
-
-
-class TaskExecutor:
-    """Base class for task executors."""
-
-    def __init__(self):
-        self._lock = Lock()
-        self._condition = Condition(self._lock)
-        self._task = None
-        self._thread = None
-        self._task_tracker = None
 
 
 class ActionExecutor:
