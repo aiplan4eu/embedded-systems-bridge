@@ -56,11 +56,6 @@ class Bridge:
 
     def __init__(self) -> None:
         # Note: Map from type instead of str to recognize subclasses.
-        self._types: Dict[type, Type] = {
-            bool: BoolType(),
-            int: IntType(),
-            float: RealType(),
-        }
         self._fluents: Dict[str, Fluent] = {}
         self._fluent_functions: Dict[str, Callable[..., object]] = {}
         self._api_function_names: Set[str] = set()
@@ -68,6 +63,38 @@ class Bridge:
         self._api_actions: Dict[str, Callable[..., object]] = {}
         self._objects: Dict[str, Object] = {}
         self._api_objects: Dict[str, object] = {}
+
+        self._int_bounds: Tuple[int, int] = (0, 100)
+        self._real_bounds: Tuple[float, float] = (0, 100)
+        self._types: Dict[type, Type] = {
+            bool: BoolType(),
+            int: IntType(lower_bound=self._int_bounds[0], upper_bound=self._int_bounds[1]),
+            float: RealType(lower_bound=self._real_bounds[0], upper_bound=self._real_bounds[1]),
+        }
+
+    @property
+    def int_bounds(self) -> Tuple[int, int]:
+        """Return bounds for int type."""
+        return self._int_bounds
+
+    @int_bounds.setter
+    def int_bounds(self, bounds: Tuple[int, int]) -> None:
+        """Set bounds for int type."""
+        self._int_bounds = bounds
+        assert bounds[0] <= bounds[1], f"Invalid bounds {bounds}!"
+        self._types[int] = IntType(lower_bound=bounds[0], upper_bound=bounds[1])
+
+    @property
+    def real_bounds(self) -> Tuple[float, float]:
+        """Return bounds for real type."""
+        return self._real_bounds
+
+    @real_bounds.setter
+    def real_bounds(self, bounds: Tuple[float, float]) -> None:
+        """Set bounds for real type."""
+        self._real_bounds = bounds
+        assert bounds[0] <= bounds[1], f"Invalid bounds {bounds}!"
+        self._types[float] = RealType(lower_bound=bounds[0], upper_bound=bounds[1])
 
     @property
     def objects(self) -> Dict[str, Object]:
