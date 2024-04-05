@@ -1,4 +1,5 @@
 """Executor for executing tasks."""
+
 from threading import Condition, Lock, Thread
 from typing import NamedTuple
 

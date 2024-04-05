@@ -85,7 +85,7 @@ def get_example_plans() -> Union[List[SequentialPlan], List[TimeTriggeredPlan]]:
     plans = {}
     for element in example_problems:
         if element in available_plans:
-            plans[element] = example_problems[element].plan
+            plans[element] = example_problems[element].valid_plans[-1]
 
     return plans
 
