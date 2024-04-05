@@ -1,4 +1,5 @@
 """Status Enum for up_esb"""
+
 from enum import Enum, auto
 
 

@@ -169,11 +169,15 @@ class Bridge:
         assert name not in self._fluents, f"Fluent {name} already exists!"
         self._fluents[name] = Fluent(
             name,
-            self.get_type(result_api_type)
-            if result_api_type
-            else self.get_type(signature["return"])
-            if signature and "return" in signature.keys()
-            else BoolType(),
+            (
+                self.get_type(result_api_type)
+                if result_api_type
+                else (
+                    self.get_type(signature["return"])
+                    if signature and "return" in signature.keys()
+                    else BoolType()
+                )
+            ),
             OrderedDict(
                 (parameter_name, self.get_type(api_type))
                 for parameter_name, api_type in (
