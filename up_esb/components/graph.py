@@ -159,9 +159,13 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
             duration = 0.0
         parameters, preconditions, postconditions = _process_action(action)
 
+        # TODO: Check this logic with respect to UP
+        node_name = f"{str(action)}({duration})"
+        if duration <= 1.0:
+            node_name = str(action)
         dependency_graph.add_node(
             child_id,
-            node_name=f"{str(action)}({duration})",
+            node_name=node_name,
             action=action.action.name,
             parameters=parameters,
             preconditions=preconditions,

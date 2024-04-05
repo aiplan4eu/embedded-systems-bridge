@@ -19,7 +19,6 @@ from unified_planning.plans import SequentialPlan, TimeTriggeredPlan
 from unified_planning.plans.partial_order_plan import PartialOrderPlan
 from unified_planning.shortcuts import *  # pylint: disable=unused-wildcard-import
 from unified_planning.test.examples import get_example_problems
-from unified_planning.test.examples.realistic import get_example_problems
 
 from up_esb.components.graph import plan_to_dependency_graph
 
@@ -29,7 +28,8 @@ from up_esb.components.graph import plan_to_dependency_graph
 class TestPartialOrderPlanGeneration(unittest.TestCase):
     def test_partial_order_plan_to_dependency_graph(self):
         example_problems = get_example_problems()
-        problem, plan = example_problems["robot_fluent_of_user_type"]
+        problem = example_problems["robot_fluent_of_user_type"].problem
+        plan = example_problems["robot_fluent_of_user_type"].valid_plans[-1]
         pop = plan.convert_to(PlanKind.PARTIAL_ORDER_PLAN, problem)
         assert isinstance(pop, PartialOrderPlan)
         dep_graph = plan_to_dependency_graph(pop)
@@ -44,16 +44,19 @@ class TestSequentialPlanTranslation(unittest.TestCase):
     def test_simple_translation(self):
         problems = get_example_problems()
 
-        for _, plan in problems.values():
-            if isinstance(plan, SequentialPlan):
-                dep_graph = plan_to_dependency_graph(plan)
-                actions = ["start"] + [str(action) for action in plan.actions] + ["end"]
-                graph_actions = []
-                for node in dep_graph.nodes(data=True):
-                    graph_actions.append(node[1]["node_name"])
+        for test_case in problems.values():
+            if not test_case.valid_plans:
+                continue
+            for plan in test_case.valid_plans:
+                if isinstance(plan, SequentialPlan):
+                    dep_graph = plan_to_dependency_graph(plan)
+                    actions = ["start"] + [str(action) for action in plan.actions] + ["end"]
+                    graph_actions = []
+                    for node in dep_graph.nodes(data=True):
+                        graph_actions.append(node[1]["node_name"])
 
-                # Check if all actions are ordered correctly
-                self.assertEqual(actions, graph_actions)
+                    # Check if all actions are ordered correctly
+                    self.assertEqual(actions, graph_actions)
 
     def test_special_cases(self):
         """Test translation for special cases."""
@@ -98,18 +101,27 @@ class TestTimeTriggeredPlanTrasnslation(unittest.TestCase):
     def test_simple_translation(self):
         problems = get_example_problems()
 
-        for _, plan in problems.values():
-            if isinstance(plan, TimeTriggeredPlan):
-                dep_graph = plan_to_dependency_graph(plan)
-                actions = ["start"] + [str(action) for _, action, _ in plan.timed_actions] + ["end"]
-                graph_actions = []
-                for node in dep_graph.nodes(data=True):
-                    node_name = node[1]["node_name"]
-                    if node_name not in ["start", "end"]:
-                        node_name = node[1]["node_name"].split(")")[0] + ")"
-                    graph_actions.append(node_name)
+        for test_case in problems.values():
+            if not test_case.valid_plans:
+                continue
 
-                self.assertEqual(actions, graph_actions)
+            for plan in test_case.valid_plans:
+                if isinstance(plan, TimeTriggeredPlan):
+                    dep_graph = plan_to_dependency_graph(plan)
+                    actions = (
+                        ["start"] + [str(action) for _, action, _ in plan.timed_actions] + ["end"]
+                    )
+                    graph_actions = []
+                    for node in dep_graph.nodes(data=True):
+                        node_name = node[1]["node_name"]
+                        if node_name not in ["start", "end"]:
+                            node_name = node[1]["node_name"].split(")")[0]
+                            # FIXME: This is a hack to remove the time from the action name
+                            if "(" in node_name:
+                                node_name += ")"
+                        graph_actions.append(node_name)
+
+                    self.assertEqual(actions, graph_actions)
 
     def test_special_cases(self):
         Location = UserType("Location")
