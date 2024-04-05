@@ -194,6 +194,8 @@ class Bridge:
         Create UP fluent based on function, which calculates the fluent's values
          for problem initialization. If function is a class method and a corresponding UP
          representation exists for its defining class, implicitly use the later as first parameter.
+         The function's result type will be used for the fluent's type, or BoolType() by default
+         if no type annotation is provided.
         If set_callable is True, also set function as the fluent function's callable. Otherwise,
          you must set it later.
         """
