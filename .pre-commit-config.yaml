@@ -1,9 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    language_version:
-      python: $(python3 --version | cut -d' ' -f2)
-      pyproject_toml: ./pyproject.toml
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
