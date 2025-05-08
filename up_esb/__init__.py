@@ -13,5 +13,6 @@
 # limitations under the License.
 
 """Embedded Systems Bridge."""
-from up_esb.bridge import Bridge
-from up_esb.components import *
+from up_esb.bridge import Bridge as Bridge
+
+__all__ = ["Bridge"]
