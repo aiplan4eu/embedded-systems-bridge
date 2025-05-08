@@ -17,11 +17,10 @@ repos:
           - --show-fixes
 
   - repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 24.8.0
     hooks:
       - id: black
         args: [--config=pyproject.toml]
-        always_run: true
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.15.0"
