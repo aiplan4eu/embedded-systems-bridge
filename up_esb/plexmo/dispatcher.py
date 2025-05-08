@@ -81,7 +81,7 @@ class PlanDispatcher:
         while self._status != DispatcherStatus.REPLANNING or not self._node_data:
             # Get the next node to be executed
             node_id, node = self._node_data.pop(0) if len(self._node_data) > 0 else (None, None)
-            if node_id is None:
+            if node is None:
                 break
             if self._status == DispatcherStatus.REPLANNING:
                 self._setup_monitor(self._graph)
@@ -155,21 +155,14 @@ class PlanDispatcher:
 
     def _check_node_status(self, nodes: list, status: ActionNodeStatus):
         """Check node status from monitoring graph."""
-        for node_id in nodes:
-            if self.monitor_graph.nodes[node_id]["status"] != status:
-                return False
-
-        return True
+        return all(self.monitor_graph.nodes[node_id]["status"] == status for node_id in nodes)
 
     def _check_result(self, result: ActionResult):
-        if (
+        return not (
             result.precondition_status != ConditionStatus.SUCCEEDED
             or result.action_status != ActionNodeStatus.SUCCEEDED
             or result.postcondition_status != ConditionStatus.SUCCEEDED
-        ):
-            return False
-
-        return True
+        )
 
     def _setup_monitor(self, graph: nx.DiGraph):
         """Setup monitor for monitoring the execution."""
@@ -194,7 +187,7 @@ class PlanDispatcher:
     def set_replan_callback(self, callback, **args):
         """Set callback function that triggers replanning"""
 
-        if args.get("rules", None) is not None:
+        if args.get("rules") is not None:
             if not isinstance(self._rules, dict):
                 raise UPESBException(
                     "Rules argument should be a dictionary with rule name as key and rule as value"
@@ -203,7 +196,7 @@ class PlanDispatcher:
         else:
             self._rules = {}
 
-        if args.get("plan", None) is not None:
+        if args.get("plan") is not None:
             self._plan = args.get("plan")
         else:
             raise UPESBException("Plan argument is not provided for replanning callback")

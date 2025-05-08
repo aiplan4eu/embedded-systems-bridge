@@ -30,7 +30,7 @@ from unified_planning.shortcuts import DurativeAction, Fraction, InstantaneousAc
 
 
 def plan_to_dependency_graph(
-    plan: Union[SequentialPlan, TimeTriggeredPlan, PartialOrderPlan]
+    plan: Union[SequentialPlan, TimeTriggeredPlan, PartialOrderPlan],
 ) -> nx.DiGraph:
     """Convert UP Plan to Dependency Graph."""
     if isinstance(plan, SequentialPlan):
@@ -150,13 +150,10 @@ def _time_triggered_plan_to_dependency_graph(plan: TimeTriggeredPlan) -> nx.DiGr
         preconditions={},
         postconditions={},
     )
-    for i, (start, action, duration) in enumerate(plan.timed_actions):
+    for i, (_, action, duration) in enumerate(plan.timed_actions):
         child_id = i + 1
         # TODO: Handle None Durations as Instantaneous Action Node
-        if duration:
-            duration = float(duration.numerator) / float(duration.denominator)
-        else:
-            duration = 0.0
+        duration = float(duration.numerator) / float(duration.denominator) if duration else 0.0
         parameters, preconditions, postconditions = _process_action(action)
 
         # TODO: Check this logic with respect to UP

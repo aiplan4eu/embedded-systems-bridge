@@ -139,7 +139,7 @@ class Bridge:
                 # Note: Use "context" to resolve potential relay to Python source file.
                 api_type = (
                     api_type.__dict__["context"][name]
-                    if "context" in api_type.__dict__.keys()
+                    if "context" in api_type.__dict__
                     else api_type.__dict__[name]
                 )
             assert isinstance(api_type, type), f"{api_type} is not a type!"
@@ -174,7 +174,7 @@ class Bridge:
                 if result_api_type
                 else (
                     self.get_type(signature["return"])
-                    if signature and "return" in signature.keys()
+                    if signature and "return" in signature
                     else BoolType()
                 )
             ),
@@ -320,8 +320,8 @@ class Bridge:
 
     def get_object(self, api_object: object) -> Object:
         """Return UP object corresponding to api_object if it exists, else api_object itself."""
-        name = getattr(api_object, "name") if hasattr(api_object, "name") else str(api_object)
-        return self._objects[name] if name in self._objects else api_object
+        name = api_object.name if hasattr(api_object, "name") else str(api_object)
+        return self._objects.get(name, api_object)
 
     def define_problem(
         self,
@@ -423,11 +423,7 @@ class Bridge:
             executable_preconditions: Dict[str, List[Callable]] = {}
             for interval, preconditions in executable_graph.nodes[node_id]["preconditions"].items():
                 # Interval is start for instantaneous actions, and (start, end) for timed actions.
-                executable_preconditions[interval] = (
-                    []
-                    if interval not in executable_preconditions
-                    else executable_preconditions[interval]
-                )
+                executable_preconditions[interval] = executable_preconditions.get(interval, [])
 
                 for precondition in preconditions:
                     executable_preconditions[interval].append(
@@ -438,9 +434,7 @@ class Bridge:
             # Action Effects
             executable_effects: Dict[str, List[Tuple[Callable, typing.Any]]] = {}
             for interval, effects in executable_graph.nodes[node_id]["postconditions"].items():
-                executable_effects[interval] = (
-                    [] if interval not in executable_effects else executable_effects[interval]
-                )
+                executable_effects[interval] = executable_effects.get(interval, [])
 
                 for effect in effects:
                     executable_effects[interval].append(
