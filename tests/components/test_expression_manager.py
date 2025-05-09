@@ -11,7 +11,7 @@ from up_esb.components.expression_manager import ExpressionManager
 # Example fluents
 
 
-class TestObject:
+class ObjectUnderTest:
     def __init__(self, value: int):
         """Test object."""
         self.value = value
@@ -56,7 +56,7 @@ def fluent_arg_int_1_fun(arg: int):
     return arg
 
 
-def fluent_arg_object(arg: TestObject) -> TestObject:
+def fluent_arg_object(arg: ObjectUnderTest) -> ObjectUnderTest:
     """Fluent real 1."""
     return arg
 
@@ -74,7 +74,7 @@ class TestExpressionManager(unittest.TestCase):
         self._fluent_arg_bool_1 = self.bridge.create_fluent_from_function(fluent_arg_bool_1_fun)
         self._fluent_arg_int_1 = self.bridge.create_fluent_from_function(fluent_arg_int_1_fun)
 
-        self.bridge.create_types([TestObject])
+        self.bridge.create_types([ObjectUnderTest])
         self._fluent_arg_object = self.bridge.create_fluent_from_function(fluent_arg_object)
 
         self.ast = ExpressionManager()
@@ -140,14 +140,14 @@ class TestExpressionManager(unittest.TestCase):
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, False)
 
-        obj = self.bridge.create_object("obj", TestObject(1))
+        obj = self.bridge.create_object("obj", ObjectUnderTest(1))
         result = self.ast.convert(
             Equals(self._fluent_arg_object(obj), self._fluent_arg_object(obj))
         )
         actual = eval(compile(result, filename="<ast>", mode="eval"))
         self.assertEqual(actual, True)
 
-        obj1 = self.bridge.create_object("obj1", TestObject(2))
+        obj1 = self.bridge.create_object("obj1", ObjectUnderTest(2))
         result = self.ast.convert(
             Equals(self._fluent_arg_object(obj), self._fluent_arg_object(obj1))
         )
