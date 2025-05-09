@@ -69,7 +69,6 @@ target-version = ["py38", "py39", "py310", "py311", "py312"]
 #  TEST RUNNER – Pytest
 # ──────────────────────────────
 [tool.pytest.ini_options]
-ignore = [".tox", ".direnv", "python_venv", "env", "venv"]
 
 # Sets list of directories that should be searched for tests when no specific
 # directories, files or test ids are given in the command line when executing
